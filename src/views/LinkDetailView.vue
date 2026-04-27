@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -23,6 +23,11 @@ const { copyWithToast } = useAppClipboard()
 const { linkUrl } = useLinkUrl()
 
 const link = computed(() => store.getById(route.params.id))
+const savingPaid = ref(false)
+
+onMounted(async () => {
+  if (!store.links.length) await store.fetchLinks()
+})
 
 const markPaidModal = ref(false)
 const markPaidForm = ref({ nombrePagador: '', fecha: new Date().toISOString().split('T')[0], referencia: '' })
@@ -37,9 +42,10 @@ function fmtDateShort(iso) {
   catch { return '—' }
 }
 
-function confirmMarkPaid() {
+async function confirmMarkPaid() {
   if (!link.value) return
-  const txn = txnStore.addTransaction({
+  savingPaid.value = true
+  const txn = await txnStore.addTransaction({
     monto: link.value.monto,
     nombreRemitente: markPaidForm.value.nombrePagador || link.value.cliente || 'Sin nombre',
     banco: 'Otro',
@@ -49,7 +55,8 @@ function confirmMarkPaid() {
     parseMethod: 'manual',
     linkId: link.value.id,
   })
-  store.markAsPaid(link.value.id, { fecha: txn.fecha, transaccionId: txn.id })
+  await store.markAsPaid(link.value.id, { fecha: txn?.fecha })
+  savingPaid.value = false
   markPaidModal.value = false
 }
 
@@ -184,7 +191,7 @@ const timelineSteps = computed(() => {
       </div>
       <template #footer>
         <AppButton variant="ghost" @click="markPaidModal = false">Cancelar</AppButton>
-        <AppButton variant="primary" @click="confirmMarkPaid">Confirmar</AppButton>
+        <AppButton variant="primary" :loading="savingPaid" @click="confirmMarkPaid">Confirmar</AppButton>
       </template>
     </AppModal>
   </AppShell>

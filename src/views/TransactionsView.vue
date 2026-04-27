@@ -1,16 +1,25 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AppShell from '@/components/layout/AppShell.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppEmptyState from '@/components/ui/AppEmptyState.vue'
+import InvoiceStatusBadge from '@/components/invoices/InvoiceStatusBadge.vue'
 import { useTransactionsStore } from '@/stores/useTransactionsStore'
+import { useInvoicesStore } from '@/stores/useInvoicesStore'
+import { usePermissions } from '@/composables/usePermissions'
+import { useToastStore } from '@/stores/useToastStore'
 import { formatCRC } from '@/utils/currency'
 import { format, isWithinInterval, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
 
+const router = useRouter()
 const store = useTransactionsStore()
+const invoicesStore = useInvoicesStore()
+const toastStore = useToastStore()
+const { can } = usePermissions()
 
 const sortKey = ref('fecha')
 const sortDir = ref('desc')
@@ -19,7 +28,7 @@ const filterMethod = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
 const amountMin = ref('')
-const amountMax = ref('')
+const generatingId = ref(null)
 
 const bancos = ['BCR', 'BN', 'BP', 'BAC', 'Scotiabank', 'Otro']
 const methods = [
@@ -28,35 +37,34 @@ const methods = [
   { key: 'link', label: 'Cobro vinculado' },
 ]
 
+onMounted(async () => {
+  await store.fetchTransactions()
+  if (can.viewInvoices.value) await invoicesStore.fetchInvoices()
+})
+
 const filtered = computed(() => {
   let list = [...store.transactions]
-
   if (filterBanco.value) list = list.filter(t => t.banco === filterBanco.value)
   if (filterMethod.value) list = list.filter(t => t.parseMethod === filterMethod.value)
   if (amountMin.value) list = list.filter(t => t.monto >= Number(amountMin.value))
-  if (amountMax.value) list = list.filter(t => t.monto <= Number(amountMax.value))
-
   if (dateFrom.value && dateTo.value) {
     list = list.filter(t => {
-      try {
-        return isWithinInterval(parseISO(t.fecha), { start: parseISO(dateFrom.value), end: parseISO(dateTo.value) })
-      } catch { return true }
+      try { return isWithinInterval(parseISO(t.fecha), { start: parseISO(dateFrom.value), end: parseISO(dateTo.value) }) }
+      catch { return true }
     })
   }
-
   list.sort((a, b) => {
-    let av = a[sortKey.value]
-    let bv = b[sortKey.value]
+    let av = a[sortKey.value], bv = b[sortKey.value]
     if (sortKey.value === 'fecha') { av = new Date(av); bv = new Date(bv) }
     if (av < bv) return sortDir.value === 'asc' ? -1 : 1
     if (av > bv) return sortDir.value === 'asc' ? 1 : -1
     return 0
   })
-
   return list
 })
 
 const runningTotal = computed(() => filtered.value.reduce((s, t) => s + t.monto, 0))
+const hasMore = computed(() => store.transactions.length < store.totalCount)
 
 function toggleSort(key) {
   if (sortKey.value === key) sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
@@ -68,30 +76,31 @@ function fmtDate(iso) {
   catch { return '—' }
 }
 
-function methodLabel(method) {
-  return { sms: 'SMS', manual: 'Manual', link: 'Cobro' }[method] || method
+function methodLabel(m) { return { sms: 'SMS', manual: 'Manual', link: 'Cobro' }[m] || m }
+function methodVariant(m) { return { sms: 'success', manual: 'info', link: 'pagado' }[m] || 'info' }
+
+function getInvoice(txn) {
+  return invoicesStore.invoices.find(i => i.transaction_id === txn.id) || null
 }
 
-function methodVariant(method) {
-  return { sms: 'success', manual: 'info', link: 'pagado' }[method] || 'info'
+async function generateInvoice(txn) {
+  generatingId.value = txn.id
+  const { error } = await invoicesStore.generateInvoice(txn.id)
+  generatingId.value = null
+  if (error) toastStore.show('Error al generar la factura', 'error')
+  else toastStore.show('Factura generada correctamente')
 }
 
 function clearFilters() {
-  filterBanco.value = ''
-  filterMethod.value = ''
-  dateFrom.value = ''
-  dateTo.value = ''
-  amountMin.value = ''
-  amountMax.value = ''
+  filterBanco.value = ''; filterMethod.value = ''
+  dateFrom.value = ''; dateTo.value = ''; amountMin.value = ''
 }
 </script>
 
 <template>
   <AppShell title="Transacciones">
     <template #topbar-actions>
-      <AppButton variant="secondary" size="sm" @click="store.exportCsv()">
-        Exportar CSV
-      </AppButton>
+      <AppButton variant="secondary" size="sm" @click="store.exportCsv()">Exportar CSV</AppButton>
     </template>
 
     <div class="space-y-4">
@@ -106,7 +115,7 @@ function clearFilters() {
 
       <!-- Filters -->
       <AppCard padding="p-4">
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <select v-model="filterBanco" class="border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none">
             <option value="">Todos los bancos</option>
             <option v-for="b in bancos" :key="b" :value="b">{{ b }}</option>
@@ -115,20 +124,22 @@ function clearFilters() {
             <option value="">Todos los métodos</option>
             <option v-for="m in methods" :key="m.key" :value="m.key">{{ m.label }}</option>
           </select>
-          <input v-model="dateFrom" type="date" class="border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Desde" />
-          <input v-model="dateTo" type="date" class="border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" placeholder="Hasta" />
-          <input v-model.number="amountMin" type="number" placeholder="₡ Mínimo" class="border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+          <input v-model="dateFrom" type="date" class="border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
+          <input v-model="dateTo" type="date" class="border border-gray-200 rounded-lg px-2.5 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
           <AppButton variant="ghost" size="sm" @click="clearFilters">Limpiar</AppButton>
         </div>
       </AppCard>
 
       <!-- Table -->
       <AppCard padding="">
+        <div v-if="store.loading" class="p-8 text-center text-gray-400 text-sm">Cargando transacciones...</div>
+
         <AppEmptyState
-          v-if="filtered.length === 0"
+          v-else-if="filtered.length === 0"
           title="Sin transacciones"
           description="No se encontraron transacciones con los filtros actuales."
         />
+
         <div v-else class="overflow-x-auto">
           <table class="w-full text-sm">
             <thead>
@@ -139,12 +150,10 @@ function clearFilters() {
                 <th class="text-right py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide cursor-pointer select-none" @click="toggleSort('monto')">
                   Monto <span v-if="sortKey === 'monto'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
                 </th>
-                <th class="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide cursor-pointer select-none" @click="toggleSort('nombreRemitente')">
-                  Remitente <span v-if="sortKey === 'nombreRemitente'">{{ sortDir === 'asc' ? '↑' : '↓' }}</span>
-                </th>
+                <th class="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide">Remitente</th>
                 <th class="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide hidden sm:table-cell">Banco</th>
-                <th class="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Cobro</th>
-                <th class="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide hidden lg:table-cell">Método</th>
+                <th class="text-left py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Método</th>
+                <th v-if="can.viewInvoices.value" class="py-3 px-4 text-xs font-medium text-gray-400 uppercase tracking-wide hidden lg:table-cell">Factura</th>
               </tr>
             </thead>
             <tbody>
@@ -155,13 +164,34 @@ function clearFilters() {
                 <td class="py-3 px-4 hidden sm:table-cell">
                   <AppBadge variant="info">{{ txn.banco }}</AppBadge>
                 </td>
-                <td class="py-3 px-4 hidden md:table-cell text-xs text-gray-400 font-mono">{{ txn.linkId || '—' }}</td>
-                <td class="py-3 px-4 hidden lg:table-cell">
+                <td class="py-3 px-4 hidden md:table-cell">
                   <AppBadge :variant="methodVariant(txn.parseMethod)">{{ methodLabel(txn.parseMethod) }}</AppBadge>
+                </td>
+                <td v-if="can.viewInvoices.value" class="py-3 px-4 hidden lg:table-cell">
+                  <template v-if="getInvoice(txn)">
+                    <button class="text-xs text-primary hover:underline" @click="router.push(`/facturas/${getInvoice(txn).id}`)">
+                      <InvoiceStatusBadge :estado="getInvoice(txn).estado" />
+                    </button>
+                  </template>
+                  <AppButton
+                    v-else
+                    variant="ghost"
+                    size="sm"
+                    :loading="generatingId === txn.id"
+                    @click="generateInvoice(txn)"
+                  >
+                    Generar factura
+                  </AppButton>
                 </td>
               </tr>
             </tbody>
           </table>
+
+          <div v-if="hasMore" class="p-4 text-center">
+            <AppButton variant="ghost" size="sm" :loading="store.loading" @click="store.fetchNextPage()">
+              Cargar más
+            </AppButton>
+          </div>
         </div>
       </AppCard>
     </div>

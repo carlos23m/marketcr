@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/layout/AppShell.vue'
 import AppButton from '@/components/ui/AppButton.vue'
@@ -13,6 +13,8 @@ import QrcodeVue from 'qrcode.vue'
 const router = useRouter()
 const store = usePaymentsStore()
 const { copyWithToast } = useAppClipboard()
+
+onMounted(() => { if (!store.links.length) store.fetchLinks() })
 const { linkUrl } = useLinkUrl()
 
 const saving = ref(false)

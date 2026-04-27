@@ -7,7 +7,30 @@
       "Bash(npm list *)",
       "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => console.log\\(Object.keys\\(m\\)\\)\\)\")",
       "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => { const d = m.default; console.log\\(d?.props ? JSON.stringify\\(Object.keys\\(d.props\\)\\) : 'no props on default'\\); console.log\\('QrcodeCanvas props:', d?.props ? 'same' : JSON.stringify\\(Object.keys\\(m.QrcodeCanvas?.props || {}\\)\\)\\) }\\)\")",
-      "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => { const d = m.default; console.log\\('renderAs default:', d?.props?.renderAs?.default\\); console.log\\('type:', d?.type\\); }\\)\")"
+      "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => { const d = m.default; console.log\\('renderAs default:', d?.props?.renderAs?.default\\); console.log\\('type:', d?.type\\); }\\)\")",
+      "Bash(node -e \"require.resolve\\('tslib'\\)\")",
+      "Bash(npm config *)",
+      "Bash(npm root *)",
+      "Read(//c/Users/Usuario/node_modules/**)",
+      "Read(//c/Users/node_modules/**)",
+      "Bash(npm explain *)",
+      "Bash(supabase --version)",
+      "Bash(winget install *)",
+      "Bash(scoop --version)",
+      "Bash(scoop install *)",
+      "Bash(curl -L https://github.com/supabase/cli/releases/latest/download/supabase_windows_amd64.tar.gz -o /tmp/supabase.tar.gz)",
+      "Read(//tmp/**)",
+      "Bash(tar -xzf supabase.tar.gz)",
+      "Bash(mv supabase.exe /usr/local/bin/supabase)",
+      "Bash(cp supabase.exe c:/Users/Usuario/AppData/Local/Microsoft/WindowsApps/supabase.exe)",
+      "Bash(ls supabase*)",
+      "Bash(mkdir -p ~/bin)",
+      "Bash(cp /tmp/supabase.exe ~/bin/supabase)",
+      "Bash(export PATH=\"$HOME/bin:$PATH\")",
+      "Bash(~/bin/supabase --version)",
+      "Bash(export SUPABASE_ACCESS_TOKEN=\"sbp_4173560db5d220c1e4ccb0fb78550d4a9af97239\")",
+      "Bash(~/bin/supabase link *)",
+      "Bash(~/bin/supabase functions *)"
     ]
   }
 }

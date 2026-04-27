@@ -31,7 +31,8 @@ const editForm = ref({})
 
 const activeLinks = computed(() => paymentsStore.links.filter(l => l.estado === 'activo'))
 
-onMounted(() => {
+onMounted(async () => {
+  if (!paymentsStore.links.length) await paymentsStore.fetchLinks()
   if (route.query.monto) {
     const matching = activeLinks.value.find(l => String(l.monto) === String(route.query.monto))
     if (matching) selectedLinkId.value = matching.id
