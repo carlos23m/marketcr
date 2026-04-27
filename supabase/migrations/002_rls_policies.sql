@@ -15,9 +15,18 @@ returns uuid language sql security definer as $$
   select business_id from profiles where id = auth.uid()
 $$;
 
--- Businesses: members only
-create policy "businesses_member_access" on businesses
-  for all using (id = my_business_id());
+-- Businesses: any authenticated user can create; members manage their own
+create policy "businesses_insert" on businesses
+  for insert with check (auth.uid() is not null);
+
+create policy "businesses_select" on businesses
+  for select using (id = my_business_id());
+
+create policy "businesses_update" on businesses
+  for update using (id = my_business_id()) with check (id = my_business_id());
+
+create policy "businesses_delete" on businesses
+  for delete using (id = my_business_id());
 
 -- Profiles: own profile only (can read teammates too)
 create policy "profiles_own" on profiles
