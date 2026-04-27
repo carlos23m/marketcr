@@ -1,7 +1,9 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
+import { RouterView } from 'vue-router'
+import AppToast from '@/components/ui/AppToast.vue'
 </script>
 
 <template>
-  <HelloWorld />
+  <RouterView />
+  <AppToast />
 </template>
