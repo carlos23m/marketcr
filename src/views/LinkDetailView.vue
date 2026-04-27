@@ -83,7 +83,7 @@ const timelineSteps = computed(() => {
         <AppCard>
           <div class="flex flex-col items-center gap-4">
             <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-              <QrcodeVue :value="`https://${link.url}`" :size="220" level="H" />
+              <QrcodeVue :value="`https://${link.url}`" :size="220" level="H" render-as="svg" />
             </div>
             <div class="text-center">
               <p class="text-3xl font-semibold text-gray-900 amount">{{ formatCRC(link.monto) }}</p>

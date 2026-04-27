@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm install *)",
       "Bash(npm run *)",
-      "Bash(curl -s http://localhost:5173/)"
+      "Bash(curl -s http://localhost:5173/)",
+      "Bash(npm list *)",
+      "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => console.log\\(Object.keys\\(m\\)\\)\\)\")",
+      "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => { const d = m.default; console.log\\(d?.props ? JSON.stringify\\(Object.keys\\(d.props\\)\\) : 'no props on default'\\); console.log\\('QrcodeCanvas props:', d?.props ? 'same' : JSON.stringify\\(Object.keys\\(m.QrcodeCanvas?.props || {}\\)\\)\\) }\\)\")",
+      "Bash(node -e \"import\\('qrcode.vue'\\).then\\(m => { const d = m.default; console.log\\('renderAs default:', d?.props?.renderAs?.default\\); console.log\\('type:', d?.type\\); }\\)\")"
     ]
   }
 }

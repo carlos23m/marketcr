@@ -27,7 +27,7 @@ function whatsappShare() {
   <AppModal :show="show" :title="link?.descripcion || 'Código QR'" size="sm" @close="$emit('close')">
     <div v-if="link" class="flex flex-col items-center gap-4">
       <div class="bg-white p-3 rounded-xl border border-gray-100">
-        <QrcodeVue :value="`https://${link.url}`" :size="200" level="H" />
+        <QrcodeVue :value="`https://${link.url}`" :size="200" level="H" render-as="svg" />
       </div>
       <div class="text-center">
         <p class="text-2xl font-semibold text-gray-900 amount">{{ formatCRC(link.monto) }}</p>

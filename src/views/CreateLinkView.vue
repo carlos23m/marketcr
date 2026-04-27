@@ -162,7 +162,7 @@ const defaultExpiry = computed(() => {
           <h2 class="text-sm font-semibold text-gray-900 mb-5">Enlace generado</h2>
           <div class="flex flex-col items-center gap-4">
             <div class="bg-white p-3 rounded-xl border border-gray-100">
-              <QrcodeVue :value="`https://${createdLink.url}`" :size="200" level="H" />
+              <QrcodeVue :value="`https://${createdLink.url}`" :size="200" level="H" render-as="svg" />
             </div>
             <div class="text-center">
               <p class="text-2xl font-semibold text-gray-900 amount">{{ formatCRC(createdLink.monto) }}</p>
