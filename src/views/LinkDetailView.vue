@@ -11,6 +11,7 @@ import PaymentStatusBadge from '@/components/payments/PaymentStatusBadge.vue'
 import { usePaymentsStore } from '@/stores/usePaymentsStore'
 import { useTransactionsStore } from '@/stores/useTransactionsStore'
 import { useAppClipboard } from '@/composables/useClipboard'
+import { useLinkUrl } from '@/composables/useLinkUrl'
 import { formatCRC } from '@/utils/currency'
 import QrcodeVue from 'qrcode.vue'
 
@@ -19,6 +20,7 @@ const router = useRouter()
 const store = usePaymentsStore()
 const txnStore = useTransactionsStore()
 const { copyWithToast } = useAppClipboard()
+const { linkUrl } = useLinkUrl()
 
 const link = computed(() => store.getById(route.params.id))
 
@@ -54,7 +56,7 @@ function confirmMarkPaid() {
 function whatsappShare() {
   if (!link.value) return
   const text = encodeURIComponent(
-    `Hola! Le comparto el enlace de cobro por ${formatCRC(link.value.monto)} para "${link.value.descripcion}":\nhttps://${link.value.url}`
+    `Hola! Le comparto el enlace de cobro por ${formatCRC(link.value.monto)} para "${link.value.descripcion}":\n${linkUrl(link.value.id)}`
   )
   window.open(`https://wa.me/?text=${text}`, '_blank')
 }
@@ -83,7 +85,7 @@ const timelineSteps = computed(() => {
         <AppCard>
           <div class="flex flex-col items-center gap-4">
             <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-              <QrcodeVue :value="`https://${link.url}`" :size="220" level="H" render-as="svg" />
+              <QrcodeVue :value="linkUrl(link.id)" :size="220" level="H" render-as="svg" />
             </div>
             <div class="text-center">
               <p class="text-3xl font-semibold text-gray-900 amount">{{ formatCRC(link.monto) }}</p>
@@ -92,7 +94,7 @@ const timelineSteps = computed(() => {
               <p class="text-xs text-gray-400 font-mono mt-2">{{ link.url }}</p>
             </div>
             <div class="flex flex-col gap-2 w-full">
-              <AppButton variant="secondary" @click="copyWithToast(`https://${link.url}`)">
+              <AppButton variant="secondary" @click="copyWithToast(linkUrl(link.id))">
                 Copiar enlace
               </AppButton>
               <AppButton variant="primary" @click="whatsappShare">

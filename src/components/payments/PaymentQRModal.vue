@@ -2,6 +2,7 @@
 import AppModal from '@/components/ui/AppModal.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { useAppClipboard } from '@/composables/useClipboard'
+import { useLinkUrl } from '@/composables/useLinkUrl'
 import { formatCRC } from '@/utils/currency'
 import QrcodeVue from 'qrcode.vue'
 
@@ -13,11 +14,12 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const { copyWithToast } = useAppClipboard()
+const { linkUrl } = useLinkUrl()
 
 function whatsappShare() {
   if (!props.link) return
   const text = encodeURIComponent(
-    `Hola! Le comparto el enlace de cobro por ${formatCRC(props.link.monto)} para "${props.link.descripcion}":\nhttps://${props.link.url}`
+    `Hola! Le comparto el enlace de cobro por ${formatCRC(props.link.monto)} para "${props.link.descripcion}":\n${linkUrl(props.link.id)}`
   )
   window.open(`https://wa.me/?text=${text}`, '_blank')
 }
@@ -27,14 +29,14 @@ function whatsappShare() {
   <AppModal :show="show" :title="link?.descripcion || 'Código QR'" size="sm" @close="$emit('close')">
     <div v-if="link" class="flex flex-col items-center gap-4">
       <div class="bg-white p-3 rounded-xl border border-gray-100">
-        <QrcodeVue :value="`https://${link.url}`" :size="200" level="H" render-as="svg" />
+        <QrcodeVue :value="linkUrl(link.id)" :size="200" level="H" render-as="svg" />
       </div>
       <div class="text-center">
         <p class="text-2xl font-semibold text-gray-900 amount">{{ formatCRC(link.monto) }}</p>
         <p class="text-xs text-gray-400 mt-1">{{ link.url }}</p>
       </div>
       <div class="flex gap-2 w-full">
-        <AppButton variant="secondary" class="flex-1" @click="copyWithToast(`https://${link.url}`)">
+        <AppButton variant="secondary" class="flex-1" @click="copyWithToast(linkUrl(link.id))">
           Copiar enlace
         </AppButton>
         <AppButton variant="primary" class="flex-1" @click="whatsappShare">

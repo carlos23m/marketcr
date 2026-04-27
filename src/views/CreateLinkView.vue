@@ -6,12 +6,14 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import { usePaymentsStore } from '@/stores/usePaymentsStore'
 import { useAppClipboard } from '@/composables/useClipboard'
+import { useLinkUrl } from '@/composables/useLinkUrl'
 import { formatCRC } from '@/utils/currency'
 import QrcodeVue from 'qrcode.vue'
 
 const router = useRouter()
 const store = usePaymentsStore()
 const { copyWithToast } = useAppClipboard()
+const { linkUrl } = useLinkUrl()
 
 const saving = ref(false)
 const createdLink = ref(null)
@@ -60,7 +62,7 @@ async function submit() {
 function whatsappShare() {
   if (!createdLink.value) return
   const text = encodeURIComponent(
-    `Hola! Le comparto el enlace de cobro por ${formatCRC(createdLink.value.monto)} para "${createdLink.value.descripcion}":\nhttps://${createdLink.value.url}`
+    `Hola! Le comparto el enlace de cobro por ${formatCRC(createdLink.value.monto)} para "${createdLink.value.descripcion}":\n${linkUrl(createdLink.value.id)}`
   )
   window.open(`https://wa.me/?text=${text}`, '_blank')
 }
@@ -162,7 +164,7 @@ const defaultExpiry = computed(() => {
           <h2 class="text-sm font-semibold text-gray-900 mb-5">Enlace generado</h2>
           <div class="flex flex-col items-center gap-4">
             <div class="bg-white p-3 rounded-xl border border-gray-100">
-              <QrcodeVue :value="`https://${createdLink.url}`" :size="200" level="H" render-as="svg" />
+              <QrcodeVue :value="linkUrl(createdLink.id)" :size="200" level="H" render-as="svg" />
             </div>
             <div class="text-center">
               <p class="text-2xl font-semibold text-gray-900 amount">{{ formatCRC(createdLink.monto) }}</p>
@@ -171,7 +173,7 @@ const defaultExpiry = computed(() => {
               <p class="text-xs text-gray-400 mt-2 font-mono">{{ createdLink.url }}</p>
             </div>
             <div class="flex flex-col gap-2 w-full">
-              <AppButton variant="secondary" @click="copyWithToast(`https://${createdLink.url}`)">
+              <AppButton variant="secondary" @click="copyWithToast(linkUrl(createdLink.id))">
                 Copiar enlace
               </AppButton>
               <AppButton variant="primary" @click="whatsappShare">
