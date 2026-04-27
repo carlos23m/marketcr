@@ -30,6 +30,7 @@ export const usePaymentsStore = defineStore('payments', () => {
   }
 
   function subscribeRealtime() {
+    if (realtimeSub) return
     const bid = businessId()
     if (!bid) return
     realtimeSub = supabase
