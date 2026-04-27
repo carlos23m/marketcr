@@ -56,7 +56,7 @@ async function finish() {
   saving.value = true
   const { error } = await auth.setupBusiness(form.value)
   if (error) {
-    errors.value.general = 'Error al guardar. Intente de nuevo.'
+    errors.value.general = error.message || 'Error al guardar. Intente de nuevo.'
     saving.value = false
     return
   }

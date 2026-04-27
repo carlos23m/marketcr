@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/lib/supabase'
-import { getProfile, createProfile, createBusiness, updateBusiness, updateProfile } from '@/lib/database'
+import { getProfile, createBusiness, getBusiness, updateBusiness, updateProfile } from '@/lib/database'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -79,7 +79,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function setupBusiness(data) {
     if (!user.value) return { error: new Error('No autenticado') }
-    const { data: biz, error } = await createBusiness({
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return { error: new Error('Sesión no encontrada. Ingrese de nuevo.') }
+
+    // Generate UUID client-side so we don't need .select() after insert.
+    // PostgREST returns 403 if the SELECT-back is blocked by RLS (profile not
+    // linked yet → my_business_id() is null → businesses_select fails).
+    const bizId = crypto.randomUUID()
+    const { error: insertError } = await supabase.from('businesses').insert({
+      id: bizId,
       nombre: data.nombre,
       tipo: data.tipo,
       sinpe_numero: data.sinpeNumero,
@@ -87,10 +95,15 @@ export const useAuthStore = defineStore('auth', () => {
       whatsapp: data.whatsapp || null,
       email: user.value.email,
     })
-    if (error) return { error }
-    await updateProfile(user.value.id, { business_id: biz.id })
-    business.value = biz
-    return { data: biz, error: null }
+    if (insertError) return { error: insertError }
+
+    // Link profile → now my_business_id() returns bizId
+    await updateProfile(user.value.id, { business_id: bizId })
+
+    // Now SELECT works (businesses_select policy passes)
+    const { data: biz } = await getBusiness(bizId)
+    business.value = biz ?? { id: bizId, nombre: data.nombre, tipo: data.tipo, sinpe_numero: data.sinpeNumero, plan: 'free' }
+    return { data: business.value, error: null }
   }
 
   async function updateBusinessProfile(data) {
