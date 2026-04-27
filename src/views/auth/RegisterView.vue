@@ -10,6 +10,7 @@ const auth = useAuthStore()
 const form = ref({ nombre: '', email: '', password: '', confirm: '' })
 const errors = ref({})
 const loading = ref(false)
+const awaitingConfirmation = ref(false)
 
 function validate() {
   errors.value = {}
@@ -25,12 +26,16 @@ function validate() {
 async function register() {
   if (!validate()) return
   loading.value = true
-  const { error } = await auth.signUp(form.value.email, form.value.password, form.value.nombre.trim())
+  const { data, error } = await auth.signUp(form.value.email, form.value.password, form.value.nombre.trim())
   loading.value = false
   if (error) {
     errors.value.general = error.message === 'User already registered'
       ? 'Ya existe una cuenta con ese correo'
       : 'Error al registrarse. Intente de nuevo.'
+    return
+  }
+  if (!data?.session) {
+    awaitingConfirmation.value = true
     return
   }
   router.push('/onboarding')
@@ -48,7 +53,19 @@ async function register() {
         <p class="text-gray-500 text-sm mt-1">Regístrese gratis — sin tarjeta requerida</p>
       </div>
 
-      <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+      <!-- Email confirmation pending -->
+      <div v-if="awaitingConfirmation" class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center flex flex-col items-center gap-3">
+        <div class="w-14 h-14 rounded-full bg-primary-light flex items-center justify-center">
+          <svg class="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+        </div>
+        <h2 class="text-base font-semibold text-gray-900">Confirme su correo</h2>
+        <p class="text-sm text-gray-500">Le enviamos un enlace de confirmación a <span class="font-medium text-gray-700">{{ form.email }}</span>. Haga clic en el enlace para continuar.</p>
+        <router-link to="/login" class="text-sm text-primary font-medium hover:underline mt-1">Volver al inicio de sesión</router-link>
+      </div>
+
+      <div v-else class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
         <div v-if="errors.general" class="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm text-red-600">
           {{ errors.general }}
         </div>
@@ -90,7 +107,7 @@ async function register() {
         </AppButton>
       </div>
 
-      <p class="text-center text-sm text-gray-500 mt-4">
+      <p v-if="!awaitingConfirmation" class="text-center text-sm text-gray-500 mt-4">
         ¿Ya tiene cuenta?
         <router-link to="/login" class="text-primary font-medium hover:underline">Ingrese aquí</router-link>
       </p>
