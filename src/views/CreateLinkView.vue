@@ -57,7 +57,7 @@ async function submit() {
   if (!validate()) return
   saving.value = true
   await new Promise(r => setTimeout(r, 500))
-  createdLink.value = store.createLink(form.value)
+  createdLink.value = await store.createLink(form.value)
   saving.value = false
 }
 

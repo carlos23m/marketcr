@@ -81,12 +81,21 @@ export async function getPaymentLink(id) {
 }
 
 export async function getPublicPaymentLink(id) {
-  const { data, error } = await supabase
+  const { data: link, error } = await supabase
     .from('payment_links')
-    .select('id, descripcion, monto, estado, vencimiento, businesses(nombre, sinpe_numero)')
+    .select('id, descripcion, monto, estado, vencimiento, business_id')
     .eq('id', id)
     .single()
-  return { data, error }
+
+  if (error || !link) return { data: link, error }
+
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('nombre, sinpe_numero')
+    .eq('id', link.business_id)
+    .single()
+
+  return { data: { ...link, businesses: business || null }, error: null }
 }
 
 export async function createPaymentLink(data) {
