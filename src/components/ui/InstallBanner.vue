@@ -37,7 +37,9 @@ function dismiss() {
     <div v-if="show" class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 z-50 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-100 dark:border-gray-800 p-4">
       <button @click="dismiss" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
       <div class="flex items-start gap-3 pr-4">
-        <img src="/icons/icon-72.png" alt="" class="w-10 h-10 rounded-xl shrink-0" />
+        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
+            <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          </div>
         <div>
           <p class="font-semibold text-gray-900 dark:text-white text-sm">Instale SINPEpay</p>
           <p class="text-xs text-gray-500 mt-0.5">Acceso rápido y funciona sin internet en el punto de venta</p>
