@@ -27,7 +27,11 @@ export default async function handler(req, res) {
 
   const sig = req.headers['onvopay-signature'] ?? req.headers['x-onvopay-signature'] ?? ''
   const webhookSecret = process.env.ONVO_WEBHOOK_SECRET
-  if (webhookSecret && !verifySignature(rawBody, sig, webhookSecret)) {
+  if (!webhookSecret) {
+    console.error('ONVO_WEBHOOK_SECRET not configured — rejecting Onvopay webhook')
+    return res.status(403).json({ error: 'Webhook not configured' })
+  }
+  if (!verifySignature(rawBody, sig, webhookSecret)) {
     return res.status(400).json({ error: 'Invalid signature' })
   }
 
@@ -68,8 +72,9 @@ async function handlePaymentSucceeded(data) {
   const { subscription_id, business_id, plan } = data.metadata
   if (!business_id || !plan) return
 
-  const periodEnd = new Date()
-  periodEnd.setDate(periodEnd.getDate() + 30)
+  const periodEnd = data.current_period_end
+    ? new Date(data.current_period_end * 1000)
+    : (() => { const d = new Date(); d.setDate(d.getDate() + 30); return d })()
 
   await supabase.from('businesses').update({
     plan,

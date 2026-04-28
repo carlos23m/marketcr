@@ -47,7 +47,10 @@ app.get('/', async (c) => {
 })
 
 // POST /api/v1/keys
-app.post('/', zValidator('json', z.object({
+app.post('/', async (c, next) => {
+  if (c.get('rol') !== 'dueno') return err(c, 'Only the business owner can create API keys', 403, 'FORBIDDEN')
+  await next()
+}, zValidator('json', z.object({
   name:        z.string().min(1).max(80),
   permissions: z.array(z.string()).default(['links:read','txns:read']),
   environment: z.enum(['live','test']).default('live'),
@@ -74,7 +77,10 @@ app.post('/', zValidator('json', z.object({
 })
 
 // DELETE /api/v1/keys/:id
-app.delete('/:id', async (c) => {
+app.delete('/:id', async (c, next) => {
+  if (c.get('rol') !== 'dueno') return err(c, 'Only the business owner can revoke API keys', 403, 'FORBIDDEN')
+  await next()
+}, async (c) => {
   const supabase = adminClient()
   const { error } = await supabase.from('api_keys')
     .update({ revoked_at: new Date().toISOString() })

@@ -76,11 +76,13 @@ app.post('/', zValidator('json', z.object({
 // DELETE /api/v1/webhooks/:id
 app.delete('/:id', async (c) => {
   const supabase = adminClient()
-  const { error } = await supabase.from('webhook_endpoints')
+  const { data, error } = await supabase.from('webhook_endpoints')
     .delete()
     .eq('id', c.req.param('id'))
     .eq('business_id', c.get('businessId'))
-  if (error) return err(c, 'Not found', 404, 'NOT_FOUND')
+    .select('id')
+  if (error) return err(c, 'Delete failed', 500, 'DB_ERROR')
+  if (!data?.length) return err(c, 'Webhook endpoint not found', 404, 'NOT_FOUND')
   return ok(c, { deleted: true })
 })
 

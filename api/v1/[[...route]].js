@@ -42,6 +42,11 @@ function requirePermission(perm) {
   }
 }
 
+app.use('/links/*', (c, next) => requirePermission(c.req.method === 'GET' ? 'links:read' : 'links:write')(c, next))
+app.use('/links',   (c, next) => requirePermission(c.req.method === 'GET' ? 'links:read' : 'links:write')(c, next))
+app.use('/transactions/*', (c, next) => requirePermission(c.req.method === 'GET' ? 'txns:read' : 'txns:write')(c, next))
+app.use('/transactions',   (c, next) => requirePermission(c.req.method === 'GET' ? 'txns:read' : 'txns:write')(c, next))
+
 app.route('/links',        linksRouter)
 app.route('/transactions', transactionsRouter)
 app.route('/webhooks',     webhooksRouter)

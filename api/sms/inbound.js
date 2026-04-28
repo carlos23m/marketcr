@@ -65,17 +65,19 @@ async function findMatchingLink(businessId, monto) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  // Validate Twilio signature
+  // Validate Twilio signature — reject if secret is not configured (fail closed)
   const authToken = process.env.TWILIO_AUTH_TOKEN
-  if (authToken) {
-    const twilioSig = req.headers['x-twilio-signature'] ?? ''
-    const url = `${process.env.APP_URL || 'https://marketcr.vercel.app'}/api/sms/inbound`
-    if (!twilio.validateRequest(authToken, twilioSig, url, req.body)) {
-      return res.status(403).json({ error: 'Invalid Twilio signature' })
-    }
+  if (!authToken) {
+    console.error('TWILIO_AUTH_TOKEN not configured — rejecting inbound SMS')
+    return res.status(403).json({ error: 'Webhook not configured' })
+  }
+  const twilioSig = req.headers['x-twilio-signature'] ?? ''
+  const url = `${process.env.APP_URL || 'https://marketcr.vercel.app'}/api/sms/inbound`
+  if (!twilio.validateRequest(authToken, twilioSig, url, req.body)) {
+    return res.status(403).json({ error: 'Invalid Twilio signature' })
   }
 
-  const { To: toNumber, Body: smsBody } = req.body
+  const { To: toNumber, Body: smsBody, MessageSid: messageSid } = req.body
   if (!toNumber || !smsBody) return res.status(400).end()
 
   // Look up business by Twilio number
@@ -85,6 +87,17 @@ export default async function handler(req, res) {
     .eq('twilio_number', toNumber)
     .single()
   if (!business) return res.status(200).send('<Response/>')
+
+  // Deduplicate Twilio retries using MessageSid
+  if (messageSid) {
+    const { data: dup } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('business_id', business.id)
+      .like('notas', `%sid:${messageSid}%`)
+      .maybeSingle()
+    if (dup) return res.status(200).send('<Response/>')
+  }
 
   const parsed = parseSms(smsBody)
   if (!parsed || parsed.confidence < 60) {
@@ -121,7 +134,7 @@ export default async function handler(req, res) {
     fecha: new Date().toISOString(),
     payment_link_id: paymentLinkId,
     parse_method: 'sms_auto',
-    notas: `SMS ingestion. Confidence: ${parsed.confidence}%. Status: ${matchStatus}`,
+    notas: `SMS ingestion. Confidence: ${parsed.confidence}%. Status: ${matchStatus}${messageSid ? `. sid:${messageSid}` : ''}`,
   })
 
   // Reply with empty TwiML (no SMS reply to sender)

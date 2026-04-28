@@ -4,15 +4,23 @@ import { Redis } from '@upstash/redis'
 import { adminClient } from './_lib/supabase.js'
 import { effectivePlan, PLAN_LIMITS } from './_lib/plans.js'
 
-let ratelimiters = {}
+let _redis = null
+const ratelimiters = {}
+
+function getRedis() {
+  if (!_redis && process.env.UPSTASH_REDIS_REST_URL) {
+    _redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  }
+  return _redis
+}
 
 function getRatelimiter(plan) {
   if (ratelimiters[plan]) return ratelimiters[plan]
-  if (!process.env.UPSTASH_REDIS_REST_URL) return null
-  const redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  })
+  const redis = getRedis()
+  if (!redis) return null
   const limit = PLAN_LIMITS[plan]?.api_rate ?? 100
   ratelimiters[plan] = new Ratelimit({
     redis,
