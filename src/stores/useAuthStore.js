@@ -41,6 +41,12 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function refreshBusiness() {
+    if (!business.value?.id) return
+    const { data } = await getBusiness(business.value.id)
+    if (data) business.value = data
+  }
+
   async function signUp(email, password, nombre) {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -123,6 +129,6 @@ export const useAuthStore = defineStore('auth', () => {
     user, profile, business, loading,
     isLoggedIn, isSetup, rol,
     init, signUp, signIn, signOut, sendPasswordReset,
-    setupBusiness, updateBusinessProfile, loadProfile,
+    setupBusiness, updateBusinessProfile, loadProfile, refreshBusiness,
   }
 })

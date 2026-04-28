@@ -6,6 +6,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import AppCard from '@/components/ui/AppCard.vue'
 import AppBadge from '@/components/ui/AppBadge.vue'
 import AppModal from '@/components/ui/AppModal.vue'
+import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useToastStore } from '@/stores/useToastStore'
 import { usePermissions } from '@/composables/usePermissions'
@@ -177,7 +178,9 @@ async function signOut() {
           </div>
           <div class="flex justify-between text-sm">
             <span class="text-gray-500">Plan</span>
-            <span class="text-gray-900 font-medium capitalize">{{ auth.business?.plan || 'free' }}</span>
+            <RouterLink to="/configuracion/facturacion" class="text-primary font-medium capitalize hover:underline">
+              {{ auth.business?.plan || 'starter' }} →
+            </RouterLink>
           </div>
         </div>
         <AppButton variant="danger" size="sm" class="mt-5" @click="signOut">Cerrar sesión</AppButton>
@@ -187,7 +190,7 @@ async function signOut() {
       <AppCard>
         <h2 class="text-sm font-semibold text-gray-900 mb-3">Sobre SINPEpay</h2>
         <div class="space-y-2 text-sm text-gray-500">
-          <div class="flex justify-between"><span>Versión</span><span class="text-gray-900 font-medium">2.0.0 — Milestone 2</span></div>
+          <div class="flex justify-between"><span>Versión</span><span class="text-gray-900 font-medium">3.0.0 — Milestone 3</span></div>
           <div class="flex justify-between"><span>Backend</span><span class="text-gray-900">Supabase</span></div>
           <div class="flex justify-between"><span>Moneda</span><span class="text-gray-900">Colón (₡ CRC)</span></div>
         </div>

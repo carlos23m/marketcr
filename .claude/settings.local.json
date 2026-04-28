@@ -34,7 +34,10 @@
       "Bash(supabase projects *)",
       "Bash(supabase functions *)",
       "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(24\\).toString\\('base64url'\\)\\)\")",
-      "Bash(npx supabase *)"
+      "Bash(npx supabase *)",
+      "Bash(curl -s -X POST https://api.onvopay.com/v1/webhooks -H 'Authorization: Bearer onvo_test_secret_key_wz0anLgFW5olZ6gyMjb_XyPYvsA2Sw7kWajh-xPF6PJIsTLxMqSvtESXBg-j9bduK0C0kr1eNVXDz53TZoXAAw' -H 'Content-Type: application/json' -d '{ *)",
+      "Bash(node -e \"const { randomBytes } = require\\('crypto'\\); console.log\\(randomBytes\\(32\\).toString\\('base64url'\\)\\)\")",
+      "Bash(npx vercel *)"
     ]
   }
 }
