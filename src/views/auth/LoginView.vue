@@ -44,7 +44,7 @@ async function sendReset() {
   <div class="min-h-screen bg-surface dark:bg-gray-950 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
-        <img src="/mainlogo.png" alt="SINPEpay" class="h-16 w-auto mx-auto mb-3" />
+        <img src="/mainlogo.png" alt="SINPEpay" class="w-48 h-auto mx-auto mb-3" />
         <h1 class="text-2xl font-semibold text-gray-900">SINPEpay</h1>
         <p class="text-gray-500 text-sm mt-1">Ingrese a su cuenta</p>
       </div>
