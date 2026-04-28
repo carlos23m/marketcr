@@ -46,7 +46,8 @@ async function register() {
   <div class="min-h-screen bg-surface dark:bg-gray-950 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
-        <img src="/mainlogo.png" alt="SINPEpay" class="w-48 h-auto mx-auto mb-3" />
+        <img src="/mainlogo.png" alt="SINPEpay" class="w-48 h-auto mx-auto mb-3 dark:hidden" />
+        <img src="/lightlogo.png" alt="SINPEpay" class="w-48 h-auto mx-auto mb-3 hidden dark:block" />
         <h1 class="text-2xl font-semibold text-gray-900">Crear cuenta</h1>
         <p class="text-gray-500 text-sm mt-1">Regístrese gratis — sin tarjeta requerida</p>
       </div>
