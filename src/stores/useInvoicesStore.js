@@ -33,7 +33,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
     generating.value = false
     if (!error && data?.data) {
-      invoices.value.unshift(data.data)
+      await fetchInvoices()
     }
     return { data: data?.data, error }
   }
