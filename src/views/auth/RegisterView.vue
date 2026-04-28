@@ -43,16 +43,16 @@ async function register() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface flex items-center justify-center p-4">
+  <div class="min-h-screen bg-surface dark:bg-gray-950 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
-        <img src="/mainlogo.png" alt="SINPEpay" class="h-12 w-auto mx-auto mb-3" />
+        <img src="/mainlogo.png" alt="SINPEpay" class="h-16 w-auto mx-auto mb-3" />
         <h1 class="text-2xl font-semibold text-gray-900">Crear cuenta</h1>
         <p class="text-gray-500 text-sm mt-1">Regístrese gratis — sin tarjeta requerida</p>
       </div>
 
       <!-- Email confirmation pending -->
-      <div v-if="awaitingConfirmation" class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm text-center flex flex-col items-center gap-3">
+      <div v-if="awaitingConfirmation" class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 shadow-sm text-center flex flex-col items-center gap-3">
         <div class="w-14 h-14 rounded-full bg-primary-light flex items-center justify-center">
           <svg class="w-7 h-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
@@ -63,7 +63,7 @@ async function register() {
         <router-link to="/login" class="text-sm text-primary font-medium hover:underline mt-1">Volver al inicio de sesión</router-link>
       </div>
 
-      <div v-else class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
+      <div v-else class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 shadow-sm flex flex-col gap-4">
         <div v-if="errors.general" class="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm text-red-600">
           {{ errors.general }}
         </div>

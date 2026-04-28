@@ -67,10 +67,10 @@ async function finish() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface flex items-center justify-center p-4">
+  <div class="min-h-screen bg-surface dark:bg-gray-950 flex items-center justify-center p-4">
     <div class="w-full max-w-md">
       <div class="text-center mb-8">
-        <img src="/mainlogo.png" alt="SINPEpay" class="h-12 w-auto mx-auto mb-3" />
+        <img src="/mainlogo.png" alt="SINPEpay" class="h-16 w-auto mx-auto mb-3" />
         <h1 class="text-2xl font-semibold text-gray-900">Configure su negocio</h1>
         <p class="text-gray-500 text-sm mt-1">Solo toma 2 minutos</p>
       </div>
@@ -79,7 +79,7 @@ async function finish() {
         <div v-for="i in 3" :key="i" :class="['h-1.5 flex-1 rounded-full transition-colors', i <= step ? 'bg-primary' : 'bg-gray-200']" />
       </div>
 
-      <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+      <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
         <p v-if="errors.general" class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-4">{{ errors.general }}</p>
 
         <!-- Step 1 -->

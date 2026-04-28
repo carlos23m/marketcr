@@ -20,7 +20,7 @@ const mobileNav = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface">
+  <div class="min-h-screen bg-surface dark:bg-gray-950">
     <!-- Sidebar desktop -->
     <AppSidebar class="hidden lg:flex lg:flex-col" />
 
@@ -58,14 +58,14 @@ const mobileNav = [
     </div>
 
     <!-- Mobile bottom nav -->
-    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 z-30 flex">
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 z-30 flex">
       <RouterLink
         v-for="item in mobileNav"
         :key="item.to"
         :to="item.to"
         :class="[
           'flex-1 flex flex-col items-center justify-center py-2 text-xs transition-colors',
-          route.path === item.to ? 'text-primary' : 'text-gray-400'
+          route.path === item.to ? 'text-primary' : 'text-gray-400 dark:text-gray-500'
         ]"
       >
         <svg v-if="item.icon === 'home'" class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

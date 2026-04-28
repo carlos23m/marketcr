@@ -41,15 +41,15 @@ async function sendReset() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface flex items-center justify-center p-4">
+  <div class="min-h-screen bg-surface dark:bg-gray-950 flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
-        <img src="/mainlogo.png" alt="SINPEpay" class="h-12 w-auto mx-auto mb-3" />
+        <img src="/mainlogo.png" alt="SINPEpay" class="h-16 w-auto mx-auto mb-3" />
         <h1 class="text-2xl font-semibold text-gray-900">SINPEpay</h1>
         <p class="text-gray-500 text-sm mt-1">Ingrese a su cuenta</p>
       </div>
 
-      <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+      <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl p-6 shadow-sm">
         <div v-if="!showReset" class="flex flex-col gap-4">
           <div v-if="errors.general" class="bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm text-red-600">
             {{ errors.general }}

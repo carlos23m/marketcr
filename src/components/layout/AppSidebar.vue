@@ -23,9 +23,9 @@ function isActive(to) {
 </script>
 
 <template>
-  <aside class="fixed left-0 top-0 h-full w-[240px] bg-white border-r border-gray-100 flex flex-col z-30">
-    <div class="flex items-center px-5 py-4 border-b border-gray-100">
-      <img src="/mainlogo.png" alt="SINPEpay" class="h-9 w-auto" />
+  <aside class="fixed left-0 top-0 h-full w-[240px] bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col z-30">
+    <div class="flex items-center px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+      <img src="/mainlogo.png" alt="SINPEpay" class="h-12 w-auto" />
     </div>
 
     <nav class="flex-1 px-3 py-4 overflow-y-auto">
@@ -36,8 +36,8 @@ function isActive(to) {
           :class="[
             'flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5',
             isActive(item.to)
-              ? 'bg-primary-light text-primary font-medium'
-              : 'text-gray-600 hover:bg-gray-50'
+              ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium'
+              : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
           ]"
         >
           <!-- Home -->
@@ -74,9 +74,9 @@ function isActive(to) {
       </template>
     </nav>
 
-    <div class="px-5 py-4 border-t border-gray-100">
-      <p class="text-xs font-medium text-gray-900 truncate">{{ auth.business?.nombre || auth.profile?.nombre || 'Mi negocio' }}</p>
-      <p class="text-xs text-gray-400 mt-0.5">{{ auth.business?.sinpe_numero || auth.user?.email || '—' }}</p>
+    <div class="px-5 py-4 border-t border-gray-100 dark:border-gray-800">
+      <p class="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">{{ auth.business?.nombre || auth.profile?.nombre || 'Mi negocio' }}</p>
+      <p class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{{ auth.business?.sinpe_numero || auth.user?.email || '—' }}</p>
     </div>
   </aside>
 </template>

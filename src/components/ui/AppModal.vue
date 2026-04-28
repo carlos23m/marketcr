@@ -34,14 +34,14 @@ onUnmounted(() => window.removeEventListener('keydown', onKey))
       >
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="$emit('close')" />
         <div
-          :class="['relative bg-white rounded-2xl shadow-xl w-full', sizes[size] || sizes.md]"
+          :class="['relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full', sizes[size] || sizes.md]"
           role="dialog"
           :aria-label="title"
         >
-          <div v-if="title" class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
-            <h2 class="text-base font-semibold text-gray-900">{{ title }}</h2>
+          <div v-if="title" class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-700">
+            <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ title }}</h2>
             <button
-              class="text-gray-400 hover:text-gray-600 transition-colors rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              class="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-primary/40"
               @click="$emit('close')"
             >
               <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
