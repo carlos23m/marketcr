@@ -24,11 +24,8 @@ function isActive(to) {
 
 <template>
   <aside class="fixed left-0 top-0 h-full w-[240px] bg-white border-r border-gray-100 flex flex-col z-30">
-    <div class="flex items-center gap-3 px-5 py-5 border-b border-gray-100">
-      <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-        <span class="text-white font-bold text-sm">SP</span>
-      </div>
-      <span class="font-semibold text-gray-900 text-sm">SINPEpay</span>
+    <div class="flex items-center px-5 py-4 border-b border-gray-100">
+      <img src="/mainlogo.png" alt="SINPEpay" class="h-9 w-auto" />
     </div>
 
     <nav class="flex-1 px-3 py-4 overflow-y-auto">
