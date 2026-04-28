@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { isToday, isThisMonth } from 'date-fns'
-import { getTransactions, createTransaction, getDailyRevenue } from '@/lib/database'
+import { getTransactions, createTransaction, getDailyRevenue, getRevenueTotals } from '@/lib/database'
 import { useAuthStore } from './useAuthStore'
 
 export const useTransactionsStore = defineStore('transactions', () => {
@@ -10,18 +9,8 @@ export const useTransactionsStore = defineStore('transactions', () => {
   const totalCount = ref(0)
   const page = ref(0)
   const pageSize = 20
-
-  const todayTotal = computed(() =>
-    transactions.value
-      .filter(t => isToday(new Date(t.fecha)))
-      .reduce((s, t) => s + t.monto, 0)
-  )
-
-  const monthTotal = computed(() =>
-    transactions.value
-      .filter(t => isThisMonth(new Date(t.fecha)))
-      .reduce((s, t) => s + t.monto, 0)
-  )
+  const todayTotal = ref(0)
+  const monthTotal = ref(0)
 
   const recent = computed(() =>
     [...transactions.value].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 10)
@@ -31,15 +20,23 @@ export const useTransactionsStore = defineStore('transactions', () => {
     return useAuthStore().business?.id
   }
 
+  async function fetchTotals() {
+    const bid = businessId()
+    if (!bid) return
+    const totals = await getRevenueTotals(bid)
+    todayTotal.value = totals.todayTotal
+    monthTotal.value = totals.monthTotal
+  }
+
   async function fetchTransactions(reset = true) {
     const bid = businessId()
     if (!bid) return
     loading.value = true
     if (reset) { page.value = 0; transactions.value = [] }
-    const { data, count } = await getTransactions(bid, {
-      limit: pageSize,
-      offset: page.value * pageSize,
-    })
+    const [{ data, count }] = await Promise.all([
+      getTransactions(bid, { limit: pageSize, offset: page.value * pageSize }),
+      reset ? fetchTotals() : Promise.resolve(),
+    ])
     if (data) {
       const normalized = data.map(normalizeTxn)
       transactions.value = reset ? normalized : [...transactions.value, ...normalized]
@@ -70,7 +67,10 @@ export const useTransactionsStore = defineStore('transactions', () => {
       parse_method: data.parseMethod || 'manual',
     }
     const { data: txn } = await createTransaction(payload)
-    if (txn) transactions.value.unshift(normalizeTxn(txn))
+    if (txn) {
+      transactions.value.unshift(normalizeTxn(txn))
+      fetchTotals()
+    }
     return txn ? normalizeTxn(txn) : null
   }
 
@@ -118,7 +118,7 @@ export const useTransactionsStore = defineStore('transactions', () => {
   return {
     transactions, loading, totalCount, recent,
     todayTotal, monthTotal,
-    fetchTransactions, fetchNextPage, addTransaction,
+    fetchTransactions, fetchNextPage, fetchTotals, addTransaction,
     getRevenueChart, exportCsv,
   }
 })

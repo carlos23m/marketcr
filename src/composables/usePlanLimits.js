@@ -3,6 +3,10 @@ import { useAuthStore } from '@/stores/useAuthStore'
 
 const PLAN_ORDER = ['starter', 'pro', 'business']
 
+function normalizePlan(plan) {
+  return PLAN_ORDER.includes(plan) ? plan : 'starter'
+}
+
 function planGte(plan, minimum) {
   return PLAN_ORDER.indexOf(plan) >= PLAN_ORDER.indexOf(minimum)
 }
@@ -14,8 +18,8 @@ export function usePlanLimits() {
     const biz = auth.business
     if (!biz) return 'starter'
     const now = new Date()
-    if (biz.trial_end && new Date(biz.trial_end) > now) return biz.plan || 'pro'
-    if (biz.plan_period_end && new Date(biz.plan_period_end) > now) return biz.plan || 'starter'
+    if (biz.trial_end && new Date(biz.trial_end) > now) return normalizePlan(biz.plan)
+    if (biz.plan_period_end && new Date(biz.plan_period_end) > now) return normalizePlan(biz.plan)
     return 'starter'
   })
 
@@ -38,7 +42,10 @@ export function usePlanLimits() {
     business: { links: null, txns: null, invoices: null, users: 10, webhooks: null, api_rate: 10000  },
   }[plan.value]))
 
-  const canCreateLink      = computed(() => limits.value.links === null)
+  function canCreateLink(currentMonthCount = 0) {
+    const max = limits.value.links
+    return max === null || currentMonthCount < max
+  }
   const canAccessApi       = computed(() => planGte(plan.value, 'pro'))
   const canUseAutoSms      = computed(() => planGte(plan.value, 'pro'))
   const canRemoveBranding  = computed(() => planGte(plan.value, 'pro'))
@@ -58,6 +65,7 @@ export function usePlanLimits() {
     limits,
     planGte: (min) => planGte(plan.value, min),
     canCreateLink,
+    linkLimit: computed(() => limits.value.links),
     canAccessApi,
     canUseAutoSms,
     canRemoveBranding,

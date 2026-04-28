@@ -87,14 +87,13 @@ export const usePaymentsStore = defineStore('payments', () => {
     return links.value.find(l => l.id === id) || null
   }
 
-  function checkExpired() {
+  async function checkExpired() {
     const now = new Date()
-    links.value.forEach(async (l) => {
-      if (l.estado === 'activo' && l.vencimiento && new Date(l.vencimiento) < now) {
-        await updatePaymentLink(l.id, { estado: 'vencido' })
-        l.estado = 'vencido'
-      }
-    })
+    const expired = links.value.filter(l => l.estado === 'activo' && l.vencimiento && new Date(l.vencimiento) < now)
+    await Promise.all(expired.map(async (l) => {
+      await updatePaymentLink(l.id, { estado: 'vencido' })
+      l.estado = 'vencido'
+    }))
   }
 
   // Map DB snake_case → component camelCase
@@ -110,7 +109,7 @@ export const usePaymentsStore = defineStore('payments', () => {
       creadoEn: l.created_at,
       pagadoEn: l.pagado_en,
       transaccionId: l.transaction_id || null,
-      url: `sinpepay.cr/p/${l.id}`,
+      url: `${window.location.origin}/p/${l.id}`,
     }
   }
 

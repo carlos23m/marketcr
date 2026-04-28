@@ -81,21 +81,12 @@ export async function getPaymentLink(id) {
 }
 
 export async function getPublicPaymentLink(id) {
-  const { data: link, error } = await supabase
+  const { data, error } = await supabase
     .from('payment_links')
-    .select('id, descripcion, monto, estado, vencimiento, business_id')
+    .select('id, descripcion, monto, estado, vencimiento, business_id, businesses(nombre, sinpe_numero)')
     .eq('id', id)
     .single()
-
-  if (error || !link) return { data: link, error }
-
-  const { data: business } = await supabase
-    .from('businesses')
-    .select('nombre, sinpe_numero')
-    .eq('id', link.business_id)
-    .single()
-
-  return { data: { ...link, businesses: business || null }, error: null }
+  return { data, error }
 }
 
 export async function createPaymentLink(data) {
@@ -156,6 +147,29 @@ export async function getDailyRevenue(businessId, days = 30) {
     .gte('fecha', since.toISOString())
     .order('fecha', { ascending: true })
   return { data, error }
+}
+
+export async function getRevenueTotals(businessId) {
+  const now = new Date()
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+  const [{ data: todayData }, { data: monthData }] = await Promise.all([
+    supabase
+      .from('transactions')
+      .select('monto')
+      .eq('business_id', businessId)
+      .gte('fecha', startOfToday),
+    supabase
+      .from('transactions')
+      .select('monto')
+      .eq('business_id', businessId)
+      .gte('fecha', startOfMonth),
+  ])
+
+  const todayTotal = (todayData ?? []).reduce((s, t) => s + t.monto, 0)
+  const monthTotal = (monthData ?? []).reduce((s, t) => s + t.monto, 0)
+  return { todayTotal, monthTotal }
 }
 
 // ── Invoices ──────────────────────────────────────────────────────────

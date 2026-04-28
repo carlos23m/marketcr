@@ -4,10 +4,16 @@ export const PLAN_LIMITS = {
   business: { links_per_month: null, txns_per_month: null, invoices_per_month: null, users: 10, api_rate: 10000,  webhooks: null },
 }
 
+const VALID_PLANS = new Set(Object.keys(PLAN_LIMITS))
+
+function normalizePlan(plan) {
+  return VALID_PLANS.has(plan) ? plan : 'starter'
+}
+
 export function effectivePlan(business) {
   const now = new Date()
-  if (business.trial_end && new Date(business.trial_end) > now) return business.plan
-  if (business.plan_period_end && new Date(business.plan_period_end) > now) return business.plan
+  if (business.trial_end && new Date(business.trial_end) > now) return normalizePlan(business.plan)
+  if (business.plan_period_end && new Date(business.plan_period_end) > now) return normalizePlan(business.plan)
   return 'starter'
 }
 

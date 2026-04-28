@@ -132,9 +132,9 @@ export default async function handler(req, res) {
     nombre_remitente: parsed.nombre_remitente || 'Desconocido',
     banco: parsed.banco,
     fecha: new Date().toISOString(),
-    payment_link_id: paymentLinkId,
-    parse_method: 'sms_auto',
-    notas: `SMS ingestion. Confidence: ${parsed.confidence}%. Status: ${matchStatus}${messageSid ? `. sid:${messageSid}` : ''}`,
+    link_id: paymentLinkId,
+    parse_method: 'sms',
+    notas: `Confidence: ${parsed.confidence}%. Status: ${matchStatus}${messageSid ? `. sid:${messageSid}` : ''}`,
   })
 
   // Reply with empty TwiML (no SMS reply to sender)

@@ -25,7 +25,7 @@ app.get('/', async (c) => {
     .order('fecha', { ascending: false })
     .range((page - 1) * limit, page * limit - 1)
   if (banco)   q = q.eq('banco', banco)
-  if (link_id) q = q.eq('payment_link_id', link_id)
+  if (link_id) q = q.eq('link_id', link_id)
   if (desde)   q = q.gte('fecha', desde)
   if (hasta)   q = q.lte('fecha', hasta)
   const { data, error, count } = await q
@@ -53,7 +53,7 @@ app.post('/', zValidator('json', z.object({
   banco:           z.string().min(1).max(80),
   fecha:           z.string().datetime().optional(),
   referencia:      z.string().max(100).optional(),
-  payment_link_id: z.string().max(16).optional(),
+  link_id: z.string().max(16).optional(),
   notas:           z.string().max(500).optional(),
 })), async (c) => {
   const body = c.req.valid('json')
@@ -61,11 +61,11 @@ app.post('/', zValidator('json', z.object({
   const supabase = adminClient()
 
   // If linking to a payment link, verify ownership
-  if (body.payment_link_id) {
+  if (body.link_id) {
     const { data: link } = await supabase
       .from('payment_links')
       .select('id, business_id')
-      .eq('id', body.payment_link_id)
+      .eq('id', body.link_id)
       .single()
     if (!link || link.business_id !== businessId)
       return err(c, 'Payment link not found', 404, 'NOT_FOUND')
@@ -78,7 +78,7 @@ app.post('/', zValidator('json', z.object({
     banco: body.banco.trim(),
     fecha: body.fecha ?? new Date().toISOString(),
     referencia: body.referencia ?? null,
-    payment_link_id: body.payment_link_id ?? null,
+    link_id: body.link_id ?? null,
     notas: body.notas ?? null,
     parse_method: 'api',
   }).select().single()
