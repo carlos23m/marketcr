@@ -1,11 +1,15 @@
 <script setup>
 import ThemeToggle from '@/components/ui/ThemeToggle.vue'
+import LocationSelector from '@/components/locations/LocationSelector.vue'
+import { useLocationsStore } from '@/stores/useLocationsStore'
 
 defineProps({
   title: { type: String, default: '' },
   mobileMenuOpen: { type: Boolean, default: false },
 })
 defineEmits(['toggleMenu'])
+
+const locationsStore = useLocationsStore()
 </script>
 
 <template>
@@ -22,6 +26,7 @@ defineEmits(['toggleMenu'])
       <h1 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ title }}</h1>
     </div>
     <div class="flex items-center gap-3">
+      <LocationSelector />
       <ThemeToggle />
       <slot name="actions" />
     </div>

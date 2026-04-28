@@ -15,6 +15,7 @@ const tab = ref('sinpe')  // 'sinpe' | 'card'
 const cardLoading = ref(false)
 const cardError = ref('')
 const cardSuccess = ref(false)
+const brand = ref(null)  // whitelabel_config row
 
 const canPayCard = computed(() => {
   const biz = link.value?.businesses
@@ -80,11 +81,24 @@ async function initCardPayment() {
 onMounted(async () => {
   const { data, error } = await getPublicPaymentLink(route.params.id)
   if (error || !data) { notFound.value = true }
-  else { link.value = data }
+  else {
+    link.value = data
+    const businessId = data.businesses?.id || data.business_id
+    if (businessId) {
+      const { data: wb } = await supabase
+        .from('whitelabel_config')
+        .select('logo_url, brand_color, business_name, font')
+        .eq('business_id', businessId)
+        .maybeSingle()
+      if (wb) brand.value = wb
+    }
+  }
   loading.value = false
-  if (data) document.title = `Pago — ${data.businesses?.nombre || 'SINPEpay'}`
+  if (data) document.title = `Pago — ${brand.value?.business_name || data.businesses?.nombre || 'SINPEpay'}`
 })
 
+const brandColor = computed(() => brand.value?.brand_color || null)
+const brandStyle = computed(() => brandColor.value ? { '--brand': brandColor.value } : {})
 const sinpeNumber = computed(() => link.value?.businesses?.sinpe_numero?.replace(/\D/g, '') || '')
 const sinpeDeepLink = computed(() => {
   if (!sinpeNumber.value || !link.value?.monto) return '#'
@@ -102,7 +116,7 @@ const isPaid = computed(() => link.value?.estado === 'pagado')
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface flex flex-col items-center justify-start py-8 px-4">
+  <div class="min-h-screen bg-surface flex flex-col items-center justify-start py-8 px-4" :style="brandStyle">
     <div v-if="loading" class="mt-20 text-gray-400 text-sm">Cargando...</div>
 
     <div v-else-if="notFound" class="mt-20 text-center">
@@ -150,10 +164,15 @@ const isPaid = computed(() => link.value?.estado === 'pagado')
     <!-- Active payment page -->
     <div v-else class="w-full max-w-[420px]">
       <div class="text-center mb-6">
-        <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-2">
-          <span class="text-white font-bold text-sm">SP</span>
-        </div>
-        <p class="text-xs text-gray-400">Pago seguro · SINPEpay</p>
+        <template v-if="brand?.logo_url">
+          <img :src="brand.logo_url" alt="Logo" class="h-10 w-auto mx-auto mb-2 object-contain" />
+        </template>
+        <template v-else>
+          <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-2" :style="brandColor ? { background: brandColor } : {}">
+            <span class="text-white font-bold text-sm">SP</span>
+          </div>
+        </template>
+        <p class="text-xs text-gray-400">{{ brand ? `Pago seguro · ${brand.business_name || link.businesses?.nombre}` : 'Pago seguro · SINPEpay' }}</p>
       </div>
 
       <div class="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
@@ -214,7 +233,8 @@ const isPaid = computed(() => link.value?.estado === 'pagado')
       </div>
 
       <p class="text-center text-xs text-gray-400 mt-6">
-        Powered by <strong class="text-primary">SINPEpay</strong> · Pago 100% costarricense
+        <template v-if="brand">{{ brand.business_name || link.businesses?.nombre }} · </template>
+        Powered by <strong class="text-primary">SINPEpay</strong>
       </p>
     </div>
   </div>

@@ -186,11 +186,29 @@ async function signOut() {
         <AppButton variant="danger" size="sm" class="mt-5" @click="signOut">Cerrar sesión</AppButton>
       </AppCard>
 
+      <!-- Notificaciones push -->
+      <AppCard>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Notificaciones</h2>
+        <RouterLink to="/configuracion/notificaciones" class="text-sm text-primary hover:underline">Administrar notificaciones push →</RouterLink>
+      </AppCard>
+
+      <!-- Sucursales (Business) -->
+      <AppCard>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Sucursales</h2>
+        <RouterLink to="/configuracion/sucursales" class="text-sm text-primary hover:underline">Administrar sucursales →</RouterLink>
+      </AppCard>
+
+      <!-- Marca personalizada (Business) -->
+      <AppCard>
+        <h2 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">Marca personalizada</h2>
+        <RouterLink to="/configuracion/marca" class="text-sm text-primary hover:underline">Configurar dominio y marca →</RouterLink>
+      </AppCard>
+
       <!-- About -->
       <AppCard>
         <h2 class="text-sm font-semibold text-gray-900 mb-3">Sobre SINPEpay</h2>
         <div class="space-y-2 text-sm text-gray-500">
-          <div class="flex justify-between"><span>Versión</span><span class="text-gray-900 font-medium">3.0.0 — Milestone 3</span></div>
+          <div class="flex justify-between"><span>Versión</span><span class="text-gray-900 font-medium">4.0.0 — Milestone 4</span></div>
           <div class="flex justify-between"><span>Backend</span><span class="text-gray-900">Supabase</span></div>
           <div class="flex justify-between"><span>Moneda</span><span class="text-gray-900">Colón (₡ CRC)</span></div>
         </div>

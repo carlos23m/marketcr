@@ -8,7 +8,7 @@ import { RouterLink, useRoute } from 'vue-router'
 const auth = useAuthStore()
 const { can } = usePermissions()
 const route = useRoute()
-const { plan, isTrialing, trialDaysLeft } = usePlanLimits()
+const { plan, isTrialing, trialDaysLeft, planGte } = usePlanLimits()
 
 function isActive(to) {
   return route.path === to || (to !== '/dashboard' && route.path.startsWith(to + '/'))
@@ -77,6 +77,36 @@ const planBadge = computed(() => {
         </span>
       </RouterLink>
 
+      <!-- Financiamiento (Pro 90d+ or Business) -->
+      <RouterLink to="/financiamiento"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/financiamiento') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Financiamiento
+        <span v-if="!planGte('pro')" class="ml-auto text-gray-300">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </span>
+      </RouterLink>
+
+      <!-- Pagos masivos (Pro+) -->
+      <RouterLink to="/pagos-masivos"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/pagos-masivos') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Pagos masivos
+        <span v-if="!planGte('pro')" class="ml-auto text-gray-300">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </span>
+      </RouterLink>
+
+      <!-- Planilla (Business) -->
+      <RouterLink to="/planilla"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/planilla') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Planilla
+        <span v-if="!planGte('business')" class="ml-auto text-gray-300">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+        </span>
+      </RouterLink>
+
       <!-- Developers -->
       <p class="text-[10px] font-semibold text-gray-400 uppercase tracking-wide px-3 mt-4 mb-1">Desarrolladores</p>
 
@@ -92,7 +122,7 @@ const planBadge = computed(() => {
       <RouterLink to="/developers/plugins"
         :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/developers/plugins') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
         <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"/></svg>
-        Plugins
+        Plugins e integraciones
       </RouterLink>
 
       <!-- Settings -->
@@ -113,7 +143,28 @@ const planBadge = computed(() => {
       <RouterLink to="/sms-import"
         :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/sms-import') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
         <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
-        SMS
+        SMS automático
+      </RouterLink>
+
+      <!-- Sucursales (Business) -->
+      <RouterLink v-if="planGte('business')" to="/configuracion/sucursales"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/configuracion/sucursales') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+        Sucursales
+      </RouterLink>
+
+      <!-- Marca (Business) -->
+      <RouterLink v-if="planGte('business')" to="/configuracion/marca"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/configuracion/marca') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+        Marca personalizada
+      </RouterLink>
+
+      <!-- Notificaciones -->
+      <RouterLink to="/configuracion/notificaciones"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-0.5', isActive('/configuracion/notificaciones') ? 'bg-primary-light dark:bg-primary/20 text-primary font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800']">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        Notificaciones
       </RouterLink>
     </nav>
 

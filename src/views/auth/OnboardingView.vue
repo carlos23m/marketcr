@@ -15,10 +15,18 @@ const saving = ref(false)
 const form = ref({
   nombre: '',
   tipo: '',
+  country: 'CR',
   sinpeNumero: '',
   cedulaJuridica: '',
   whatsapp: '',
 })
+
+const countries = [
+  { code: 'CR', name: 'Costa Rica', available: true },
+  { code: 'PA', name: 'Panamá', available: false },
+  { code: 'GT', name: 'Guatemala', available: false },
+  { code: 'HN', name: 'Honduras', available: false },
+]
 
 const errors = ref({})
 
@@ -104,6 +112,26 @@ async function finish() {
             <p v-if="errors.tipo" class="text-xs text-red-500 mt-1">{{ errors.tipo }}</p>
           </div>
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1.5">País *</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="c in countries"
+                :key="c.code"
+                type="button"
+                :disabled="!c.available"
+                @click="c.available && (form.country = c.code)"
+                :class="[
+                  'relative flex flex-col items-center justify-center rounded-lg border py-3 px-2 text-sm transition-colors',
+                  form.country === c.code ? 'border-primary bg-primary/5 text-primary font-semibold' : 'border-gray-200 text-gray-700',
+                  !c.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-primary/40',
+                ]"
+              >
+                <span class="font-medium">{{ c.name }}</span>
+                <span v-if="!c.available" class="text-[10px] text-amber-600 font-normal mt-0.5">Próximamente</span>
+              </button>
+            </div>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-1.5">Cédula jurídica <span class="text-gray-400 font-normal">(opcional)</span></label>
             <input v-model="form.cedulaJuridica" type="text" placeholder="3-XXX-XXXXXX"
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none" />
@@ -140,6 +168,7 @@ async function finish() {
           <div class="bg-surface rounded-xl p-4 w-full text-left mt-1">
             <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Negocio</span><span class="font-medium text-gray-900">{{ form.nombre }}</span></div>
             <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">Tipo</span><span class="font-medium text-gray-900">{{ form.tipo }}</span></div>
+            <div class="flex justify-between text-sm mb-2"><span class="text-gray-500">País</span><span class="font-medium text-gray-900">{{ countries.find(c => c.code === form.country)?.name }}</span></div>
             <div class="flex justify-between text-sm"><span class="text-gray-500">SINPE</span><span class="font-medium text-gray-900">{{ form.sinpeNumero }}</span></div>
           </div>
         </div>

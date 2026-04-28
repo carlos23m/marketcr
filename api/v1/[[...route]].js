@@ -6,6 +6,11 @@ import transactionsRouter from './routes/transactions.js'
 import webhooksRouter     from './routes/webhooks.js'
 import meRouter           from './routes/me.js'
 import keysRouter         from './routes/auth.js'
+import financingRouter    from './routes/financing.js'
+import batchesRouter      from './routes/batches.js'
+import recipientsRouter   from './routes/recipients.js'
+import payrollRouter      from './routes/payroll.js'
+import locationsRouter    from './routes/locations.js'
 
 export const config = { runtime: 'nodejs' }
 
@@ -51,6 +56,11 @@ app.route('/links',        linksRouter)
 app.route('/transactions', transactionsRouter)
 app.route('/webhooks',     webhooksRouter)
 app.route('/me',           meRouter)
+app.route('/financing',    financingRouter)
+app.route('/batches',      batchesRouter)
+app.route('/recipients',   recipientsRouter)
+app.route('/payroll',      payrollRouter)
+app.route('/locations',    locationsRouter)
 
 // 404 fallback
 app.all('*', (c) => c.json({ success: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } }, 404))

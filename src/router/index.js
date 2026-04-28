@@ -36,6 +36,16 @@ const routes = [
   { path: '/developers',                   name: 'ApiDocs',     component: () => import('@/views/ApiDocsView.vue'),      meta: { requiresBusiness: true } },
   { path: '/developers/plugins',           name: 'Plugins',     component: () => import('@/views/PluginsView.vue'),      meta: { requiresBusiness: true } },
   { path: '/configuracion/facturacion',    name: 'Billing',     component: () => import('@/views/BillingView.vue'),      meta: { requiresBusiness: true } },
+
+  // M4 new routes
+  { path: '/financiamiento',               name: 'Financing',           component: () => import('@/views/FinancingView.vue'),                   meta: { requiresBusiness: true } },
+  { path: '/pagos-masivos',                name: 'BulkPayments',        component: () => import('@/views/BulkPaymentsView.vue'),                meta: { requiresBusiness: true } },
+  { path: '/planilla',                     name: 'Payroll',             component: () => import('@/views/PayrollView.vue'),                     meta: { requiresBusiness: true } },
+  { path: '/configuracion/sucursales',     name: 'Locations',           component: () => import('@/views/LocationsSettingsView.vue'),           meta: { requiresBusiness: true } },
+  { path: '/configuracion/marca',          name: 'WhiteLabel',          component: () => import('@/views/WhiteLabelView.vue'),                  meta: { requiresBusiness: true } },
+  { path: '/configuracion/notificaciones', name: 'PushNotifications',   component: () => import('@/views/PushNotificationsView.vue'),           meta: { requiresBusiness: true } },
+  { path: '/admin/financiamiento',         name: 'AdminFinancing',      component: () => import('@/views/admin/FinancingAdminView.vue'),        meta: { requiresAuth: true } },
+  { path: '/admin/health',                 name: 'AdminHealth',         component: () => import('@/views/admin/HealthView.vue'),                meta: { requiresAuth: true } },
 ]
 
 const router = createRouter({

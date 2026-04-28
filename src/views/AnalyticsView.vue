@@ -1,9 +1,9 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Line, Doughnut } from 'vue-chartjs'
+import { Line, Doughnut, Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement,
-  ArcElement, Title, Tooltip, Legend, Filler,
+  BarElement, ArcElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js'
 import AppShell from '@/components/layout/AppShell.vue'
 import AppCard from '@/components/ui/AppCard.vue'
@@ -11,19 +11,23 @@ import UpgradeBanner from '@/components/billing/UpgradeBanner.vue'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { usePlanLimits } from '@/composables/usePlanLimits'
 import { useTransactionsStore } from '@/stores/useTransactionsStore'
+import { useLocationsStore } from '@/stores/useLocationsStore'
 import { supabase } from '@/lib/supabase'
 import { formatCRC } from '@/utils/currency'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Title, Tooltip, Legend, Filler)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend, Filler)
 
 const auth = useAuthStore()
 const txnStore = useTransactionsStore()
-const { canUseAnalytics, plan } = usePlanLimits()
+const locStore = useLocationsStore()
+const { canUseAnalytics, plan, planGte } = usePlanLimits()
+const canCompareLocations = computed(() => planGte('business') && locStore.locations.length > 1)
 
 const period = ref('30')
 const loading = ref(false)
 const dailyData = ref([])
 const bankData = ref([])
+const locationData = ref([])
 const stats = ref({ total: 0, count: 0, avgTxn: 0, conversionRate: 0 })
 
 const BANCO_COLORS = {
@@ -73,6 +77,23 @@ async function fetchAnalytics() {
     txns.forEach(t => { bankTotals[t.banco] = (bankTotals[t.banco] ?? 0) + t.monto })
     bankData.value = Object.entries(bankTotals).map(([banco, monto]) => ({ banco, monto }))
   }
+  // Location breakdown (business plan only)
+  if (canCompareLocations.value) {
+    const { data: locTxns } = await supabase
+      .from('transactions')
+      .select('monto, location_id')
+      .eq('business_id', bid)
+      .gte('fecha', since.toISOString())
+      .not('location_id', 'is', null)
+    if (locTxns) {
+      const totals = {}
+      locTxns.forEach(t => { totals[t.location_id] = (totals[t.location_id] ?? 0) + t.monto })
+      locationData.value = locStore.locations.map(l => ({
+        nombre: l.nombre,
+        monto: totals[l.id] ?? 0,
+      })).sort((a, b) => b.monto - a.monto)
+    }
+  }
   loading.value = false
 }
 
@@ -98,6 +119,16 @@ const doughnutData = computed(() => ({
     data: bankData.value.map(b => b.monto),
     backgroundColor: bankData.value.map(b => BANCO_COLORS[b.banco] ?? '#9CA3AF'),
     borderWidth: 0,
+  }],
+}))
+
+const locationBarData = computed(() => ({
+  labels: locationData.value.map(l => l.nombre),
+  datasets: [{
+    label: 'Ingresos',
+    data: locationData.value.map(l => l.monto),
+    backgroundColor: '#1D9E75',
+    borderRadius: 6,
   }],
 }))
 
@@ -132,7 +163,10 @@ function exportCsv() {
   a.click(); URL.revokeObjectURL(url)
 }
 
-onMounted(fetchAnalytics)
+onMounted(async () => {
+  if (planGte('business')) await locStore.fetchLocations()
+  fetchAnalytics()
+})
 watch(period, fetchAnalytics)
 </script>
 
@@ -224,6 +258,28 @@ watch(period, fetchAnalytics)
           </div>
         </AppCard>
       </div>
+      <!-- Location comparison (business plan) -->
+      <AppCard v-if="canCompareLocations && locationData.length" class="mt-6">
+        <h2 class="text-sm font-semibold text-gray-900 mb-4">Comparativa por sucursal</h2>
+        <Bar
+          :data="locationBarData"
+          :options="{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              y: { beginAtZero: true, ticks: { callback: v => '₡' + v.toLocaleString() } },
+            },
+          }"
+          style="height:200px"
+        />
+        <div class="mt-3 grid grid-cols-2 gap-2">
+          <div v-for="l in locationData" :key="l.nombre" class="flex justify-between text-sm bg-gray-50 dark:bg-gray-800/50 rounded-lg px-3 py-2">
+            <span class="text-gray-600 truncate">{{ l.nombre }}</span>
+            <span class="font-medium text-gray-900 amount ml-2 shrink-0">{{ formatCRC(l.monto) }}</span>
+          </div>
+        </div>
+      </AppCard>
     </template>
   </AppShell>
 </template>

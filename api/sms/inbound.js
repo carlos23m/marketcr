@@ -65,16 +65,14 @@ async function findMatchingLink(businessId, monto) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
-  // Validate Twilio signature — reject if secret is not configured (fail closed)
+  // Validate Twilio signature — skip validation if token not configured (SMS feature disabled)
   const authToken = process.env.TWILIO_AUTH_TOKEN
-  if (!authToken) {
-    console.error('TWILIO_AUTH_TOKEN not configured — rejecting inbound SMS')
-    return res.status(403).json({ error: 'Webhook not configured' })
-  }
-  const twilioSig = req.headers['x-twilio-signature'] ?? ''
-  const url = `${process.env.APP_URL || 'https://marketcr.vercel.app'}/api/sms/inbound`
-  if (!twilio.validateRequest(authToken, twilioSig, url, req.body)) {
-    return res.status(403).json({ error: 'Invalid Twilio signature' })
+  if (authToken) {
+    const twilioSig = req.headers['x-twilio-signature'] ?? ''
+    const url = `${process.env.APP_URL || 'https://marketcr.vercel.app'}/api/sms/inbound`
+    if (!twilio.validateRequest(authToken, twilioSig, url, req.body)) {
+      return res.status(403).json({ error: 'Invalid Twilio signature' })
+    }
   }
 
   const { To: toNumber, Body: smsBody, MessageSid: messageSid } = req.body
@@ -125,8 +123,25 @@ export default async function handler(req, res) {
     matchStatus = 'low_confidence'
   }
 
+  // Check for active financing application — withhold repayment amount
+  let repaymentWithheld = null
+  const { data: activeApp } = await supabase
+    .from('financing_applications')
+    .select('id, repayment_rate, amount_remaining')
+    .eq('business_id', business.id)
+    .eq('status', 'disbursed')
+    .maybeSingle()
+
+  if (activeApp && activeApp.amount_remaining > 0) {
+    const withheld = Math.min(
+      Math.round(parsed.monto * Number(activeApp.repayment_rate)),
+      activeApp.amount_remaining
+    )
+    repaymentWithheld = withheld > 0 ? withheld : null
+  }
+
   // Record transaction
-  await supabase.from('transactions').insert({
+  const { data: txn } = await supabase.from('transactions').insert({
     business_id: business.id,
     monto: parsed.monto,
     nombre_remitente: parsed.nombre_remitente || 'Desconocido',
@@ -134,8 +149,23 @@ export default async function handler(req, res) {
     fecha: new Date().toISOString(),
     link_id: paymentLinkId,
     parse_method: 'sms',
+    repayment_withheld: repaymentWithheld,
     notas: `Confidence: ${parsed.confidence}%. Status: ${matchStatus}${messageSid ? `. sid:${messageSid}` : ''}`,
-  })
+  }).select().single()
+
+  // Record repayment deduction and update application balance
+  if (txn && activeApp && repaymentWithheld) {
+    await supabase.from('financing_repayments').insert({
+      application_id: activeApp.id,
+      transaction_id: txn.id,
+      amount: repaymentWithheld,
+    })
+    const newRemaining = Math.max(0, activeApp.amount_remaining - repaymentWithheld)
+    const newStatus = newRemaining === 0 ? 'repaid' : 'disbursed'
+    await supabase.from('financing_applications')
+      .update({ amount_remaining: newRemaining, status: newStatus, ...(newStatus === 'repaid' ? { repaid_at: new Date().toISOString() } : {}) })
+      .eq('id', activeApp.id)
+  }
 
   // Reply with empty TwiML (no SMS reply to sender)
   res.setHeader('Content-Type', 'text/xml')

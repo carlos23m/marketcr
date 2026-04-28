@@ -7,7 +7,9 @@ import { useTransactionsStore } from '@/stores/useTransactionsStore'
 import { useAuthStore } from '@/stores/useAuthStore'
 import { useLinkUrl } from '@/composables/useLinkUrl'
 import { usePlanLimits } from '@/composables/usePlanLimits'
+import { useOfflineQueue } from '@/composables/useOfflineQueue'
 import { formatCRC } from '@/utils/currency'
+import InstallBanner from '@/components/ui/InstallBanner.vue'
 
 const router = useRouter()
 const payments = usePaymentsStore()
@@ -15,6 +17,7 @@ const txns = useTransactionsStore()
 const auth = useAuthStore()
 const { linkUrl } = useLinkUrl()
 const { canUsePosMode } = usePlanLimits()
+const { queue, syncing, isOnline, enqueue } = useOfflineQueue()
 
 const amount = ref('')
 const description = ref('')
@@ -59,10 +62,13 @@ async function createCharge() {
   const monto = parseInt(amount.value)
   if (!monto || monto < 1) return
   creating.value = true
-  createdLink.value = await payments.createLink({
-    descripcion: description.value || 'Cobro en POS',
-    monto,
-  })
+  const payload = { descripcion: description.value || 'Cobro en POS', monto }
+  if (isOnline.value) {
+    createdLink.value = await payments.createLink(payload)
+  } else {
+    await enqueue(payload)
+    createdLink.value = null
+  }
   creating.value = false
   amount.value = ''
   description.value = ''
@@ -99,6 +105,16 @@ const displayAmount = computed(() => {
 
   <!-- Full-screen POS -->
   <div v-else class="h-screen bg-gray-900 flex flex-col overflow-hidden text-white">
+    <!-- Offline banner -->
+    <div v-if="!isOnline" class="bg-amber-500 text-amber-950 text-xs font-semibold text-center py-1.5 px-4 flex items-center justify-center gap-2">
+      <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728M15.536 8.464a5 5 0 010 7.072M12 13a1 1 0 100-2 1 1 0 000 2zm-4.243-4.243a9 9 0 0113.486 0"/></svg>
+      Sin conexión · los cobros se guardarán y sincronizarán al reconectarse
+      <span v-if="queue.length" class="ml-1 bg-amber-700/30 rounded px-1">{{ queue.length }} en cola</span>
+    </div>
+    <div v-else-if="syncing" class="bg-primary/90 text-white text-xs font-medium text-center py-1">
+      Sincronizando cobros guardados…
+    </div>
+
     <!-- Top bar -->
     <div class="flex items-center justify-between px-6 py-3 bg-gray-800 border-b border-gray-700">
       <div>
@@ -177,9 +193,12 @@ const displayAmount = computed(() => {
           <button
             @click="createCharge"
             :disabled="!amount || creating"
-            class="w-full bg-primary hover:bg-primary/90 disabled:opacity-40 text-white rounded-2xl py-5 text-xl font-bold transition-colors"
+            :class="[
+              'w-full rounded-2xl py-5 text-xl font-bold transition-colors disabled:opacity-40 text-white',
+              isOnline ? 'bg-primary hover:bg-primary/90' : 'bg-amber-500 hover:bg-amber-400',
+            ]"
           >
-            {{ creating ? '...' : `Cobrar ${displayAmount}` }}
+            {{ creating ? '...' : isOnline ? `Cobrar ${displayAmount}` : `Guardar ${displayAmount} (sin conexión)` }}
           </button>
         </div>
       </div>
@@ -204,4 +223,6 @@ const displayAmount = computed(() => {
       </div>
     </div>
   </div>
+
+  <InstallBanner v-if="canUsePosMode" />
 </template>
