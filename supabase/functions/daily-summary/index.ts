@@ -2,8 +2,19 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 // Schedule this via Supabase cron at: 0 2 * * * (2AM UTC = 8PM Costa Rica UTC-6)
+// Set CRON_SECRET in Supabase edge function secrets and pass it as x-cron-secret header
+// from the cron job configuration.
 
 serve(async (req) => {
+  // ── Guard: only allow requests with the correct cron secret ─────────────
+  const cronSecret = Deno.env.get('CRON_SECRET')
+  if (cronSecret) {
+    const incoming = req.headers.get('x-cron-secret')
+    if (incoming !== cronSecret) {
+      return new Response('Unauthorized', { status: 401 })
+    }
+  }
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -11,7 +22,6 @@ serve(async (req) => {
     )
     const resendKey = Deno.env.get('RESEND_API_KEY')
 
-    // Get all businesses
     const { data: businesses } = await supabase.from('businesses').select('*')
     if (!businesses) return new Response('no businesses', { status: 200 })
 
@@ -57,7 +67,6 @@ serve(async (req) => {
         facturas_pendientes: pendingInvoices || 0,
       }
 
-      // Log to DB
       await supabase.from('notification_logs').insert({
         business_id: biz.id,
         tipo: 'daily_summary',
@@ -66,7 +75,6 @@ serve(async (req) => {
         enviado: false,
       })
 
-      // Send email if configured
       if (biz.email && resendKey) {
         const html = `
           <div style="font-family:Inter,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">

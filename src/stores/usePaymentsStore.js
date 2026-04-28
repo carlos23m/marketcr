@@ -49,12 +49,14 @@ export const usePaymentsStore = defineStore('payments', () => {
   async function createLink(data) {
     const bid = businessId()
     if (!bid) return null
+    const amount = Math.round(Number(data.monto))
+    if (!amount || amount < 1 || amount > 99_999_999) return null
     const id = nanoid(8)
     const payload = {
       id,
       business_id: bid,
-      descripcion: data.descripcion,
-      monto: Number(data.monto),
+      descripcion: String(data.descripcion).trim().slice(0, 200),
+      monto: amount,
       cliente: data.cliente || null,
       vencimiento: data.vencimiento ? new Date(data.vencimiento).toISOString() : null,
       notas: data.notas || null,

@@ -8,6 +8,7 @@ const routes = [
   { path: '/login', name: 'Login', component: () => import('@/views/auth/LoginView.vue'), meta: { guestOnly: true } },
   { path: '/register', name: 'Register', component: () => import('@/views/auth/RegisterView.vue'), meta: { guestOnly: true } },
   { path: '/invite/accept', name: 'InviteAccept', component: () => import('@/views/auth/InviteAcceptView.vue') },
+  { path: '/reset-password', name: 'ResetPassword', component: () => import('@/views/auth/ResetPasswordView.vue'), meta: { public: true } },
 
   // Onboarding (requires auth, no business yet)
   { path: '/onboarding', name: 'Onboarding', component: () => import('@/views/auth/OnboardingView.vue'), meta: { requiresAuth: true } },

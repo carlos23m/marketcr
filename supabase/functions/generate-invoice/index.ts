@@ -2,22 +2,68 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('APP_URL') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function escapeXml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function cryptoRandom8(): string {
+  const buf = new Uint32Array(1)
+  crypto.getRandomValues(buf)
+  return (buf[0] % 100_000_000).toString().padStart(8, '0')
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+
   try {
+    // ── Auth: verify the caller is a legitimate authenticated user ──────────
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) return json({ error: 'Unauthorized' }, 401)
+
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+    const { data: { user }, error: authErr } = await userClient.auth.getUser()
+    if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
+    // ── Service-role client for actual DB work (bypasses RLS) ───────────────
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
     const { transaction_id, business_id } = await req.json()
+    if (!transaction_id || !business_id) return json({ error: 'Parámetros inválidos' }, 400)
 
-    // Fetch transaction + business
+    // ── Ownership: caller's business_id must match the claimed business_id ──
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('business_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile?.business_id || profile.business_id !== business_id) {
+      return json({ error: 'Forbidden' }, 403)
+    }
+
+    // ── Fetch transaction + business ─────────────────────────────────────────
     const { data: txn } = await supabase
       .from('transactions')
       .select('*, payment_links(descripcion)')
@@ -30,13 +76,12 @@ serve(async (req) => {
       .eq('id', business_id)
       .single()
 
-    if (!txn || !biz) {
-      return new Response(JSON.stringify({ error: 'Datos no encontrados' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
-    }
+    if (!txn || !biz) return json({ error: 'Datos no encontrados' }, 404)
 
-    // Get next consecutive number
+    // Belt-and-suspenders: the transaction must belong to the claimed business
+    if (txn.business_id !== business_id) return json({ error: 'Forbidden' }, 403)
+
+    // ── Consecutive number ───────────────────────────────────────────────────
     const { count } = await supabase
       .from('invoices')
       .select('*', { count: 'exact', head: true })
@@ -45,20 +90,18 @@ serve(async (req) => {
     const seq = String((count || 0) + 1).padStart(10, '0')
     const consecutivo = `001-00001-${seq}`
 
-    // Generate 50-digit clave (Costa Rica FE v4.4 algorithm)
+    // ── Clave (Costa Rica FE v4.4) — crypto random security code ────────────
     const now = new Date(txn.fecha)
     const dd = String(now.getDate()).padStart(2, '0')
     const mm = String(now.getMonth() + 1).padStart(2, '0')
     const yy = String(now.getFullYear()).slice(2)
     const cedula = (biz.cedula_juridica || '3000000000').replace(/\D/g, '').padStart(12, '0')
-    const security = String(Math.floor(Math.random() * 99999999)).padStart(8, '0')
-    // pais(3) + fecha(8) + cedula(12) + consecutivo_numeros(10) + situacion(1) + security(8) = 42 chars
-    // Full clave: 506 + DDMMYYYY + cedula(12) + seq(10) + 1 + security(8) = 42, padded to 50
+    const security = cryptoRandom8()
     const clave = `506${dd}${mm}${yy}${cedula}${seq}1${security}`.padEnd(50, '0')
 
-    // Build XML (FE v4.4 sandbox — no real signature)
-    const descripcion = txn.payment_links?.descripcion || 'Servicio'
-    const montoStr = txn.monto.toString()
+    // ── XML — all user-supplied values are XML-escaped ───────────────────────
+    const descripcion = escapeXml(txn.payment_links?.descripcion || 'Servicio')
+    const montoStr = escapeXml(txn.monto)
     const fechaEmision = new Date().toISOString().replace('Z', '+00:00')
 
     const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -71,15 +114,15 @@ serve(async (req) => {
   <NumeroConsecutivo>${consecutivo}</NumeroConsecutivo>
   <FechaEmision>${fechaEmision}</FechaEmision>
   <Emisor>
-    <Nombre>${biz.nombre}</Nombre>
+    <Nombre>${escapeXml(biz.nombre)}</Nombre>
     <Identificacion>
       <Tipo>02</Tipo>
-      <Numero>${(biz.cedula_juridica || '').replace(/\D/g, '')}</Numero>
+      <Numero>${escapeXml((biz.cedula_juridica || '').replace(/\D/g, ''))}</Numero>
     </Identificacion>
-    <CorreoElectronico>${biz.email || ''}</CorreoElectronico>
+    <CorreoElectronico>${escapeXml(biz.email || '')}</CorreoElectronico>
   </Emisor>
   <Receptor>
-    <Nombre>${txn.nombre_remitente}</Nombre>
+    <Nombre>${escapeXml(txn.nombre_remitente)}</Nombre>
   </Receptor>
   <CondicionVenta>01</CondicionVenta>
   <MedioPago>06</MedioPago>
@@ -108,7 +151,7 @@ serve(async (req) => {
   </ResumenFactura>
 </FacturaElectronica>`
 
-    // Save invoice record (sandbox — skips real Hacienda submission)
+    // ── Persist ──────────────────────────────────────────────────────────────
     const { data: invoice, error: invError } = await supabase
       .from('invoices')
       .insert({
@@ -125,19 +168,14 @@ serve(async (req) => {
 
     if (invError) throw invError
 
-    // Link invoice to transaction
     await supabase
       .from('transactions')
       .update({ invoice_id: invoice.id })
       .eq('id', transaction_id)
 
-    return new Response(JSON.stringify({ data: invoice }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ data: invoice })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ error: err.message }, 500)
   }
 })
 

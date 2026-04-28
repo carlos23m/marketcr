@@ -46,10 +46,15 @@ function montoInput(e) {
   montoDisplay.value = raw
 }
 
+const MAX_MONTO = 99_999_999
+
 function validate() {
   errors.value = {}
   if (!form.value.descripcion.trim()) errors.value.descripcion = 'La descripción es obligatoria'
-  if (!form.value.monto || Number(form.value.monto) <= 0) errors.value.monto = 'Ingrese un monto válido'
+  const amount = Number(form.value.monto)
+  if (!form.value.monto || amount <= 0) errors.value.monto = 'Ingrese un monto válido'
+  else if (!Number.isInteger(amount)) errors.value.monto = 'El monto debe ser un número entero'
+  else if (amount > MAX_MONTO) errors.value.monto = `El monto máximo es ${formatCRC(MAX_MONTO)}`
   return Object.keys(errors.value).length === 0
 }
 
@@ -89,6 +94,7 @@ const defaultExpiry = computed(() => {
             <input
               v-model="form.descripcion"
               type="text"
+              maxlength="200"
               placeholder="Ej: Almuerzo del día, Aretes artesanales..."
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
               :class="{ 'border-red-400': errors.descripcion }"
@@ -104,6 +110,7 @@ const defaultExpiry = computed(() => {
                 :value="montoDisplay"
                 type="text"
                 inputmode="numeric"
+                maxlength="9"
                 placeholder="0"
                 class="w-full border border-gray-200 rounded-lg pl-7 pr-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
                 :class="{ 'border-red-400': errors.monto }"
@@ -119,6 +126,7 @@ const defaultExpiry = computed(() => {
             <input
               v-model="form.cliente"
               type="text"
+              maxlength="100"
               placeholder="Ej: Juan Vargas"
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
             />
@@ -140,6 +148,7 @@ const defaultExpiry = computed(() => {
             <textarea
               v-model="form.notas"
               rows="2"
+              maxlength="500"
               placeholder="Instrucciones o detalles extra..."
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors resize-none"
             />

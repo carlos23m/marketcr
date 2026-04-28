@@ -2,20 +2,47 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': Deno.env.get('APP_URL') || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+
   try {
+    // ── Auth: verify the caller is a legitimate authenticated user ──────────
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) return json({ error: 'Unauthorized' }, 401)
+
+    const userClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+    const { data: { user }, error: authErr } = await userClient.auth.getUser()
+    if (authErr || !user) return json({ error: 'Unauthorized' }, 401)
+
+    // ── Service-role client for actual DB work ───────────────────────────────
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
     const { invitation_id } = await req.json()
+    if (!invitation_id) return json({ error: 'Parámetros inválidos' }, 400)
+
+    // ── Ownership: caller must belong to the invitation's business ───────────
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('business_id, rol')
+      .eq('id', user.id)
+      .single()
 
     const { data: invite } = await supabase
       .from('invitations')
@@ -23,12 +50,16 @@ serve(async (req) => {
       .eq('id', invitation_id)
       .single()
 
-    if (!invite) {
-      return new Response(JSON.stringify({ error: 'Invitación no encontrada' }), {
-        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+    if (!invite) return json({ error: 'Invitación no encontrada' }, 404)
+
+    if (!profile?.business_id || profile.business_id !== invite.business_id) {
+      return json({ error: 'Forbidden' }, 403)
     }
 
+    // Only owners can send invitations
+    if (profile.rol !== 'dueno') return json({ error: 'Forbidden' }, 403)
+
+    // ── Send email ───────────────────────────────────────────────────────────
     const appUrl = Deno.env.get('APP_URL') || 'https://sinpepay.vercel.app'
     const acceptUrl = `${appUrl}/invite/accept?token=${invite.token}`
     const resendKey = Deno.env.get('RESEND_API_KEY')
@@ -41,9 +72,7 @@ serve(async (req) => {
         payload: { to: invite.email, accept_url: acceptUrl },
         enviado: false,
       })
-      return new Response(JSON.stringify({ data: { stub: true, accept_url: acceptUrl } }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return json({ data: { stub: true, accept_url: acceptUrl } })
     }
 
     const emailBody = {
@@ -85,12 +114,8 @@ serve(async (req) => {
       enviado: sent,
     })
 
-    return new Response(JSON.stringify({ data: { sent } }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ data: { sent } })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    })
+    return json({ error: err.message }, 500)
   }
 })

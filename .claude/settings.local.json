@@ -32,7 +32,9 @@
       "Bash(~/bin/supabase link *)",
       "Bash(~/bin/supabase functions *)",
       "Bash(supabase projects *)",
-      "Bash(supabase functions *)"
+      "Bash(supabase functions *)",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(24\\).toString\\('base64url'\\)\\)\")",
+      "Bash(npx supabase *)"
     ]
   }
 }
