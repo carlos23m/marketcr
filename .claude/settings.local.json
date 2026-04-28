@@ -44,7 +44,8 @@
       "Bash(supabase secrets *)",
       "Bash(npx web-push *)",
       "Bash(vercel --version)",
-      "Bash(npm show *)"
+      "Bash(npm show *)",
+      "Bash(git status *)"
     ]
   }
 }
