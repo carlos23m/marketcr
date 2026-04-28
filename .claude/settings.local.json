@@ -43,7 +43,8 @@
       "Bash(supabase db *)",
       "Bash(supabase secrets *)",
       "Bash(npx web-push *)",
-      "Bash(vercel --version)"
+      "Bash(vercel --version)",
+      "Bash(npm show *)"
     ]
   }
 }
