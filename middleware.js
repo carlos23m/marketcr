@@ -1,12 +1,6 @@
 // Vercel Edge Middleware — custom domain routing for white-label
-// Runs on every request before it hits any route handler
+import { next, rewrite } from '@vercel/edge'
 
-import { NextResponse } from 'next/server'
-
-const SUPABASE_URL  = process.env.SUPABASE_URL
-const SUPABASE_ANON = process.env.SUPABASE_ANON_KEY
-
-// Cache: domain → { business_id, verified } with 5-min TTL
 const CACHE = new Map()
 const CACHE_TTL = 5 * 60 * 1000
 
@@ -15,43 +9,43 @@ export const config = {
 }
 
 export default async function middleware(req) {
-  const { hostname, pathname } = new URL(req.url)
+  const { hostname } = new URL(req.url)
 
-  // Only intercept custom domains (not sinpepay.cr or localhost)
-  const isOwnDomain = hostname.includes('sinpepay') || hostname.includes('localhost') || hostname.includes('vercel.app')
-  if (isOwnDomain) return NextResponse.next()
+  const isOwnDomain =
+    hostname.includes('sinpepay') ||
+    hostname.includes('localhost') ||
+    hostname.includes('vercel.app')
+  if (isOwnDomain) return next()
 
-  // Check cache
   const now = Date.now()
   const cached = CACHE.get(hostname)
   if (cached && now - cached.ts < CACHE_TTL) {
-    if (!cached.active) return NextResponse.next()
-    const rewriteUrl = new URL(req.url)
-    rewriteUrl.hostname = 'sinpepay.cr'
-    const resp = NextResponse.rewrite(rewriteUrl)
-    resp.headers.set('X-SINPEpay-Domain', hostname)
-    return resp
+    if (!cached.active) return next()
+    const dest = new URL(req.url)
+    dest.hostname = 'sinpepay.cr'
+    return rewrite(dest, { headers: { 'X-SINPEpay-Domain': hostname } })
   }
 
-  // Query Supabase for active custom domain
+  const supabaseUrl  = process.env.VITE_SUPABASE_URL
+  const supabaseAnon = process.env.VITE_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !supabaseAnon) return next()
+
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/custom_domains?domain=eq.${encodeURIComponent(hostname)}&status=eq.active&select=business_id`,
-      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${SUPABASE_ANON}` } }
+      `${supabaseUrl}/rest/v1/custom_domains?domain=eq.${encodeURIComponent(hostname)}&status=eq.active&select=business_id`,
+      { headers: { apikey: supabaseAnon, Authorization: `Bearer ${supabaseAnon}` } }
     )
     const data = await res.json()
     const domainRow = Array.isArray(data) ? data[0] : null
 
     CACHE.set(hostname, { active: !!domainRow, business_id: domainRow?.business_id, ts: now })
 
-    if (!domainRow) return NextResponse.next()
+    if (!domainRow) return next()
 
-    const rewriteUrl = new URL(req.url)
-    rewriteUrl.hostname = 'sinpepay.cr'
-    const resp = NextResponse.rewrite(rewriteUrl)
-    resp.headers.set('X-SINPEpay-Domain', hostname)
-    return resp
+    const dest = new URL(req.url)
+    dest.hostname = 'sinpepay.cr'
+    return rewrite(dest, { headers: { 'X-SINPEpay-Domain': hostname } })
   } catch {
-    return NextResponse.next()
+    return next()
   }
 }
