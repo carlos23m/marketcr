@@ -143,6 +143,15 @@ const sinpeDeepLink = computed(() => {
   return `sinpe://pay?phone=${sinpeNumber.value}&amount=${link.value.monto}`
 })
 
+const copied = ref(false)
+function copyPhone() {
+  const num = link.value?.businesses?.sinpe_numero || sinpeNumber.value
+  navigator.clipboard.writeText(num).then(() => {
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  })
+}
+
 const qrValue = computed(() => {
   if (!sinpeNumber.value || !link.value?.monto) return window.location.href
   return buildSinpeEmvQr(sinpeNumber.value, link.value.monto) ?? window.location.href
@@ -236,37 +245,33 @@ const isPaid = computed(() => link.value?.estado === 'pagado')
 
         <!-- SINPE tab -->
         <div v-if="tab === 'sinpe'" class="p-6 space-y-5">
-          <div class="flex flex-col items-center gap-3">
-            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">Escanee para pagar</p>
-            <div class="bg-white p-3 rounded-xl border border-gray-100">
-              <QrcodeVue :value="qrValue" :size="220" level="H" render-as="svg" />
+          <!-- Phone number + copy -->
+          <div class="bg-surface rounded-xl p-4 flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs text-gray-400 mb-0.5">Número SINPE</p>
+              <p class="text-xl font-bold font-mono text-gray-900 tracking-wide">{{ link.businesses?.sinpe_numero }}</p>
+              <p class="text-xs text-gray-500 mt-0.5">Monto: <strong class="text-gray-800 amount">{{ formatCRC(link.monto) }}</strong></p>
             </div>
-            <p class="text-xs text-gray-400">Escanee desde SINPE Móvil → Enviar → Escanear QR</p>
+            <button @click="copyPhone" class="flex-shrink-0 flex flex-col items-center gap-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-medium transition-colors" :class="copied ? 'text-green-600 border-green-300' : 'text-gray-600 hover:bg-gray-50'">
+              <svg v-if="!copied" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <svg v-else class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+              {{ copied ? 'Copiado' : 'Copiar' }}
+            </button>
           </div>
-          <div class="bg-surface rounded-xl p-4">
-            <p class="text-xs font-semibold text-gray-700 mb-3">Cómo pagar con SINPE Móvil</p>
-            <ol class="space-y-2">
-              <li class="flex items-start gap-2 text-xs text-gray-600">
-                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">1</span>
-                Abra su app bancaria (BAC, BCR, BN, etc.)
-              </li>
-              <li class="flex items-start gap-2 text-xs text-gray-600">
-                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">2</span>
-                Vaya a <strong class="text-gray-900">SINPE Móvil → Enviar → Escanear QR</strong>
-              </li>
-              <li class="flex items-start gap-2 text-xs text-gray-600">
-                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">3</span>
-                Apunte la cámara al código QR — número y monto se llenan solos
-              </li>
-              <li class="flex items-start gap-2 text-xs text-gray-600">
-                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">4</span>
-                Confirme el envío de <strong class="text-gray-900 amount">{{ formatCRC(link.monto) }}</strong> al <strong class="font-mono text-gray-900">{{ link.businesses?.sinpe_numero }}</strong>
-              </li>
-            </ol>
+
+          <!-- QR (for banks that support scanning: BN, BCR) -->
+          <div class="flex flex-col items-center gap-3">
+            <p class="text-xs text-gray-400 font-medium uppercase tracking-wide">QR para BN / BCR</p>
+            <div class="bg-white p-3 rounded-xl border border-gray-100">
+              <QrcodeVue :value="qrValue" :size="200" level="H" render-as="svg" />
+            </div>
+            <p class="text-xs text-gray-400 text-center">BN / BCR: SINPE Móvil → Enviar → Escanear QR<br>BAC: use el número de arriba o el botón de abajo</p>
           </div>
+
+          <!-- Deep link button -->
           <a :href="sinpeDeepLink" class="w-full bg-primary text-white rounded-lg px-4 py-3 text-sm font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-            Pagar con SINPE Móvil
+            Abrir SINPE Móvil
           </a>
         </div>
 
