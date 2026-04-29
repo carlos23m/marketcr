@@ -100,13 +100,52 @@ onMounted(async () => {
 const brandColor = computed(() => brand.value?.brand_color || null)
 const brandStyle = computed(() => brandColor.value ? { '--brand': brandColor.value } : {})
 const sinpeNumber = computed(() => link.value?.businesses?.sinpe_numero?.replace(/\D/g, '') || '')
+
+// CRC-16/CCITT-FALSE (polynomial 0x1021, init 0xFFFF) — required by EMV QR spec
+function crc16(str) {
+  let crc = 0xFFFF
+  for (let i = 0; i < str.length; i++) {
+    crc ^= str.charCodeAt(i) << 8
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF
+    }
+  }
+  return crc
+}
+
+function pad(n) { return String(n).padStart(2, '0') }
+
+// Builds BCCR SINPE Móvil EMV QR string (ISO 20022 / EMVCo Merchant Presented QR)
+// GUID cr.bccr.sinpe is the BCCR application identifier for SINPE Móvil
+function buildSinpeEmvQr(phone, amount) {
+  const ph = String(phone).replace(/\D/g, '').slice(-8)
+  if (ph.length < 7) return null
+  const amt = Number(amount).toFixed(2)          // e.g. "5000.00"
+  const GUID = 'cr.bccr.sinpe'
+  const f00  = '00' + pad(GUID.length) + GUID    // sub-field 00: GUID
+  const f01  = '01' + pad(ph.length)   + ph       // sub-field 01: phone number
+  const d26  = f00 + f01
+  const f26  = '26' + pad(d26.length)  + d26      // template 26: Merchant Account Info
+  const f54  = '54' + pad(amt.length)  + amt      // field 54: transaction amount
+  const body = '000201'   // Payload Format Indicator = 01
+    + '010212'            // Point of Initiation = 12 (dynamic, single-use)
+    + f26                 // Merchant Account Info (SINPE)
+    + '5303188'           // Transaction Currency = 188 (CRC colón)
+    + f54                 // Transaction Amount
+    + '5802CR'            // Country Code = CR
+    + '6304'              // CRC tag (value appended below)
+  const checksum = crc16(body).toString(16).toUpperCase().padStart(4, '0')
+  return body + checksum
+}
+
 const sinpeDeepLink = computed(() => {
   if (!sinpeNumber.value || !link.value?.monto) return '#'
   return `sinpe://pay?phone=${sinpeNumber.value}&amount=${link.value.monto}`
 })
+
 const qrValue = computed(() => {
-  if (!sinpeNumber.value) return window.location.href
-  return `sinpe://pay?phone=${sinpeNumber.value}&amount=${link.value?.monto || 0}`
+  if (!sinpeNumber.value || !link.value?.monto) return window.location.href
+  return buildSinpeEmvQr(sinpeNumber.value, link.value.monto) ?? window.location.href
 })
 const isExpired = computed(() => {
   if (!link.value?.vencimiento) return false
@@ -202,18 +241,26 @@ const isPaid = computed(() => link.value?.estado === 'pagado')
             <div class="bg-white p-3 rounded-xl border border-gray-100">
               <QrcodeVue :value="qrValue" :size="220" level="H" render-as="svg" />
             </div>
-            <p class="text-xs text-gray-400">El monto se ingresa automáticamente</p>
+            <p class="text-xs text-gray-400">Escanee desde SINPE Móvil → Enviar → Escanear QR</p>
           </div>
           <div class="bg-surface rounded-xl p-4">
             <p class="text-xs font-semibold text-gray-700 mb-3">Cómo pagar con SINPE Móvil</p>
             <ol class="space-y-2">
-              <li v-for="(step, i) in ['Abra su app bancaria','Vaya a SINPE Móvil → Enviar','Escanee el QR o use el número']" :key="i" class="flex items-start gap-2 text-xs text-gray-600">
-                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">{{ i+1 }}</span>
-                {{ step }}<strong v-if="i===2" class="text-gray-900 font-mono ml-1">{{ link.businesses?.sinpe_numero }}</strong>
+              <li class="flex items-start gap-2 text-xs text-gray-600">
+                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">1</span>
+                Abra su app bancaria (BAC, BCR, BN, etc.)
+              </li>
+              <li class="flex items-start gap-2 text-xs text-gray-600">
+                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">2</span>
+                Vaya a <strong class="text-gray-900">SINPE Móvil → Enviar → Escanear QR</strong>
+              </li>
+              <li class="flex items-start gap-2 text-xs text-gray-600">
+                <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">3</span>
+                Apunte la cámara al código QR — número y monto se llenan solos
               </li>
               <li class="flex items-start gap-2 text-xs text-gray-600">
                 <span class="w-4 h-4 rounded-full bg-primary text-white flex items-center justify-center flex-shrink-0 mt-0.5 text-[10px] font-bold">4</span>
-                Monto: <strong class="text-gray-900 amount ml-1">{{ formatCRC(link.monto) }}</strong>
+                Confirme el envío de <strong class="text-gray-900 amount">{{ formatCRC(link.monto) }}</strong> al <strong class="font-mono text-gray-900">{{ link.businesses?.sinpe_numero }}</strong>
               </li>
             </ol>
           </div>
