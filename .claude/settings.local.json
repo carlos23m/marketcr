@@ -45,7 +45,8 @@
       "Bash(npx web-push *)",
       "Bash(vercel --version)",
       "Bash(npm show *)",
-      "Bash(git status *)"
+      "Bash(git status *)",
+      "PowerShell(Rename-Item \"c:\\\\Users\\\\Usuario\\\\marketcr\\\\api\\\\v1\\\\routes\" \"c:\\\\Users\\\\Usuario\\\\marketcr\\\\api\\\\v1\\\\_routes\")"
     ]
   }
 }
